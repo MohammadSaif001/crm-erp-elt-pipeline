@@ -85,5 +85,4 @@ data_engineering_project/
 
 ## Author  
 **Mohammad Saif**
-**ZawberuS**
 Aspiring Data Engineer  
