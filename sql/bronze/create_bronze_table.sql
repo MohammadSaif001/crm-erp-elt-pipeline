@@ -69,7 +69,4 @@ CREATE TABLE IF NOT EXISTS erp_px_cat_g1v2 (
 );
 USE bronze_db;
 
-ALTER TABLE crm_customers_info
-ADD COLUMN load_timestamp DATETIME DEFAULT NULL;
-
-SELECT * FROM crm_customers_info;
+SELECT * FROM crm_sales_details;
