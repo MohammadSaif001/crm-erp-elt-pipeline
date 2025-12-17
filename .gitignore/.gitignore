@@ -8,10 +8,18 @@
 .env.*
 
 # Python cache
-__pycache__/*.pyc
+__pycache__/
 *.pyc
+
+# VS Code
+.vscode/
 
 # OS files
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local data/state
+data/processed/
+temp.py
+tee.txt
