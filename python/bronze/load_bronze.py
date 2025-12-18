@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import logging
 import pandas as pd
 import json
 import numpy as np
@@ -23,6 +25,12 @@ from utils.ingestion_checker import(
     mark_file_processed
 )
 print("PROCESSED_FILE PATH =", PROCESSED_FILE)
+
+logging.basicConfig(
+    filename=r"D:\data_engineering_project\data\logs\pipeline.log",
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
 
 #! Bronze CSV Reader Function
 def read_bronze_csv(csv_path: str) -> pd.DataFrame:
@@ -65,9 +73,12 @@ def data_base_connection():
 #! Customer Load Function
 def load_cust_info():
     
+    start_time = time.time()
     source = "source_crm"
     file_name = "cust_info.csv"
     bronze_table = "crm_customers_info"
+    table_name = "crm_customers_info"
+    logging.info(f'[START] Loading table: {table_name}')
 
     print("Starting Bronze Load: Customers.")
     engine =data_base_connection()
@@ -77,6 +88,7 @@ def load_cust_info():
     try:
         if is_file_processed(source, file_name, bronze_table):
             print(f"Skipping {bronze_table} - already processed.")
+            logging.info(f'[SKIP] Table already processed: {table_name}')
             return
 
         # 1. Read CSV (wrapped)
@@ -135,18 +147,26 @@ def load_cust_info():
             dtype=cast(Any, dtype_map)
         )
         mark_file_processed(source, file_name, bronze_table)
+        elapsed_time = time.time() - start_time
+        logging.info(
+            f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
+            )
         print("Success: Data Loaded to bronze_db crm_customers_info table.")
 
     except Exception as e:
+        logging.exception(
+            f"[ERROR] Loading table: {table_name} | Error: {e}"
+            )    
         print(f"Processing Error: {e}")
 
 #! Sales Load Function
 def load_sales_details_info():
-    
+    start_time = time.time()
     source = "source_crm"
     file_name = "sales_details.csv"
     bronze_table = "crm_sales_details"
-
+    table_name = "crm_sales_details"
+    logging.info(f'[START] Loading table: {table_name}')
 
 
     print("Starting Bronze Load: Sales.")
@@ -160,7 +180,9 @@ def load_sales_details_info():
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
             print(f"Skipping {bronze_table} - already processed.")
+            logging.info(f"[SKIP] Table already processed: {table_name}")   
             return
+        
         csv_path = get_raw_data_path(
         os.path.join("source_crm", "sales_details.csv")
     )
@@ -215,17 +237,24 @@ def load_sales_details_info():
         
         print("Success: Data Loaded to bronze_db crm_sales_details table.")
         mark_file_processed(source, file_name, bronze_table)
+        elapsed_time = time.time() - start_time
+        logging.info(
+            f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
+        )
     except Exception as e:
+        logging.exception(
+            f"[ERROR] Loading table: {table_name} | Error: {e}"
+        )
         print(f"Processing Error: {e}")
 
 #! Product Load Function
 def load_prd_info():
-    
+    start_time = time.time()
     source = "source_crm"
     file_name = "prd_info.csv"
     bronze_table = "crm_prd_info"
-
-
+    table_name = "crm_prd_info"
+    logging.info(f'[START] Loading table: {table_name}')
 
     print("Starting Bronze Load: Product.")
     
@@ -239,6 +268,7 @@ def load_prd_info():
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
             print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"[SKIP] Table already processed: {table_name}")
             return
     
         #! 1. Read CSV 
@@ -287,17 +317,25 @@ def load_prd_info():
         )
         
         print("Success: Data Loaded to bronze_db crm_prd_info table.")
+        elapsed_time = time.time() - start_time
+        logging.info(
+            f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
+        )
         mark_file_processed(source, file_name, bronze_table)
     except Exception as e:
+        logging.error(
+            f"[ERROR] Loading table: {table_name} | Error: {e}"
+        )
         print(f"Processing Error: {e}")
 
 #! ERP Load Functions
 def load_erp_cust_az12():
-    
+    start_time = time.time()
     source = "source_erp"
     file_name = "CUST_AZ12.csv"
     bronze_table = "erp_cust_az12"
-
+    table_name = "erp_cust_az12"
+    logging.info(f'[START] Loading table: {table_name}')
 
 
     print("Starting Bronze Load: ERP Customer.")
@@ -311,6 +349,7 @@ def load_erp_cust_az12():
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
             print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"[SKIP] Table already processed: {table_name}")
             return
         csv_path = get_raw_data_path(os.path.join
                 ("source_erp", "CUST_AZ12.csv"))
@@ -353,14 +392,23 @@ def load_erp_cust_az12():
         
         print("Success: Data Loaded to bronze_db erp_cust_az12 table.")
         mark_file_processed(source, file_name, bronze_table)
+        elapsed_time = time.time() - start_time
+        logging.info(
+            f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
+        )
     except Exception as e:
+        logging.exception(
+            f"[ERROR] Loading table: {table_name} | Error: {e}"
+        )
         print(f"Processing Error: {e}")
 
 def load_erp_location_a101():
-    
+    start_time = time.time()
     source = "source_erp"
     file_name = "LOC_A101.csv"
     bronze_table = "erp_location_a101"
+    table_name = "erp_location_a101"
+    logging.info(f'[START] Loading table: {table_name}')
 
     print("Starting Bronze Load: ERP Location.")
     
@@ -373,6 +421,7 @@ def load_erp_location_a101():
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
             print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"[SKIP] Table already processed: {table_name}")
             return
         csv_path = get_raw_data_path(os.path.join
                 ("source_erp", "LOC_A101.csv"))
@@ -414,15 +463,22 @@ def load_erp_location_a101():
         
         print("Success: Data Loaded to bronze_db erp_location_a101 table.")
         mark_file_processed(source, file_name, bronze_table)
+        elapsed_time = time.time() - start_time
+        logging.info(
+            f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
+        )
     except Exception as e:
-        print(f"Processing Error: {e}")
+        logging.exception(
+            f"[ERROR] Loading table: {table_name} | Error: {e}"
+        )
 
 def load_erp_px_cat_g1v2():
-    
+    start_time = time.time()
     source = "source_erp"
     file_name = "PX_CAT_G1V2.csv"
     bronze_table = "erp_px_cat_g1v2"
-
+    table_name = "erp_px_cat_g1v2"
+    logging.info(f'[START] Loading table: {table_name}')
     print("Starting Bronze Load: ERP Category.")
     
     #! Connect to Database
@@ -434,6 +490,7 @@ def load_erp_px_cat_g1v2():
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):  
             print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"[SKIP] Table already processed: {table_name}")
             return
         csv_path = get_raw_data_path(os.path.join
                 ("source_erp", "PX_CAT_G1V2.csv"))
@@ -478,7 +535,14 @@ def load_erp_px_cat_g1v2():
         
         print("Success: Data Loaded to bronze_db erp_px_cat_g1v2 table.")
         mark_file_processed(source, file_name, bronze_table)
+        elapsed_time = time.time() - start_time
+        logging.info(
+            f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
+        )
     except Exception as e:
+        logging.exception(
+            f"[ERROR] Loading table: {table_name} | Error: {e}"
+        )
         print(f"Processing Error: {e}")
 
 #! Orchestration Function
@@ -488,7 +552,8 @@ def run_bronze_pipeline():
     Entry point for local runs, schedulers, and future Airflow DAGs.
     """
     print("Starting Bronze Layer Pipeline...")
-
+    batch_start = time.time()
+    logging.info("[BATCH START] Bronze layer ingestion started")
     # CRM sources
     load_cust_info()
     load_prd_info()
@@ -500,8 +565,11 @@ def run_bronze_pipeline():
     load_erp_px_cat_g1v2()
 
     print("Bronze Layer Pipeline Completed Successfully.")
-
-
+    batch_duration = time.time() - batch_start
+    logging.info(
+        f"[BATCH END] Bronze layer completed | Total time={batch_duration:.2f}s"
+    )
+    print(f"Total Bronze Layer Time: {batch_duration:.2f} seconds.")
 def main():
     run_bronze_pipeline()
 
