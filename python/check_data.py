@@ -20,7 +20,7 @@ def check_data_slim():
 
     for table in tables_to_check:
         print(f"\n{'='*60}")
-        print(f"👀  TABLE: {table.upper()} (Without Raw JSON)")
+        print(f"TABLE: {table.upper()} (Without Raw JSON)")
         print(f"{'='*60}")
         
         with engine.connect() as conn:
@@ -29,7 +29,7 @@ def check_data_slim():
             df = pd.read_sql(query, conn)
             
             if df.empty:
-                print("⚠️  Table is empty!")
+                print("Table is empty!")
             else:
                 
                 if 'raw_row' in df.columns:
