@@ -1,0 +1,34 @@
+2025-12-18 13:44:08,030 | INFO | [BATCH START] Bronze layer ingestion started
+2025-12-18 13:44:08,030 | INFO | [START] Loading table: crm_customers_info
+2025-12-18 13:44:08,829 | INFO | Marking file as processed: Table=crm_customers_info
+2025-12-18 13:44:08,832 | INFO | [END] Loaded table: crm_customers_info | Time taken: 0.80 seconds
+2025-12-18 13:44:08,834 | INFO | [START] Loading table: crm_prd_info
+2025-12-18 13:44:08,888 | INFO | [END] Loaded table: crm_prd_info | Time taken: 0.05 seconds
+2025-12-18 13:44:08,889 | INFO | Marking file as processed: Table=crm_prd_info
+2025-12-18 13:44:08,890 | INFO | [START] Loading table: crm_sales_details
+2025-12-18 13:44:11,526 | INFO | Marking file as processed: Table=crm_sales_details
+2025-12-18 13:44:11,526 | INFO | [END] Loaded table: crm_sales_details | Time taken: 2.64 seconds
+2025-12-18 13:44:11,536 | INFO | [START] Loading table: erp_cust_az12
+2025-12-18 13:44:12,074 | INFO | Marking file as processed: Table=erp_cust_az12
+2025-12-18 13:44:12,075 | INFO | [END] Loaded table: erp_cust_az12 | Time taken: 0.54 seconds
+2025-12-18 13:44:12,075 | INFO | [START] Loading table: erp_location_a101
+2025-12-18 13:44:12,568 | INFO | Marking file as processed: Table=erp_location_a101
+2025-12-18 13:44:12,569 | INFO | [END] Loaded table: erp_location_a101 | Time taken: 0.49 seconds
+2025-12-18 13:44:12,570 | INFO | [START] Loading table: erp_px_cat_g1v2
+2025-12-18 13:44:12,603 | INFO | Marking file as processed: Table=erp_px_cat_g1v2
+2025-12-18 13:44:12,603 | INFO | [END] Loaded table: erp_px_cat_g1v2 | Time taken: 0.03 seconds
+2025-12-18 13:44:12,603 | INFO | [BATCH END] Bronze layer completed | Total time=4.57s
+2025-12-18 13:45:11,193 | INFO | [BATCH START] Bronze layer ingestion started
+2025-12-18 13:45:11,193 | INFO | [START] Loading table: crm_customers_info
+2025-12-18 13:45:11,211 | INFO | [SKIP] Table already processed: crm_customers_info
+2025-12-18 13:45:11,211 | INFO | [START] Loading table: crm_prd_info
+2025-12-18 13:45:11,216 | INFO | [SKIP] Table already processed: crm_prd_info
+2025-12-18 13:45:11,217 | INFO | [START] Loading table: crm_sales_details
+2025-12-18 13:45:11,220 | INFO | [SKIP] Table already processed: crm_sales_details
+2025-12-18 13:45:11,220 | INFO | [START] Loading table: erp_cust_az12
+2025-12-18 13:45:11,224 | INFO | [SKIP] Table already processed: erp_cust_az12
+2025-12-18 13:45:11,224 | INFO | [START] Loading table: erp_location_a101
+2025-12-18 13:45:11,227 | INFO | [SKIP] Table already processed: erp_location_a101
+2025-12-18 13:45:11,227 | INFO | [START] Loading table: erp_px_cat_g1v2
+2025-12-18 13:45:11,230 | INFO | [SKIP] Table already processed: erp_px_cat_g1v2
+2025-12-18 13:45:11,230 | INFO | [BATCH END] Bronze layer completed | Total time=0.04s

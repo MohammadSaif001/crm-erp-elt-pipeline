@@ -1,0 +1,7 @@
+source,file_name,bronze_table
+source_crm,cust_info.csv,crm_customers_info
+source_crm,prd_info.csv,crm_prd_info
+source_crm,sales_details.csv,crm_sales_details
+source_erp,CUST_AZ12.csv,erp_cust_az12
+source_erp,LOC_A101.csv,erp_location_a101
+source_erp,PX_CAT_G1V2.csv,erp_px_cat_g1v2
