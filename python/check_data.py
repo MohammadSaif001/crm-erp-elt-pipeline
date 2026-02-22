@@ -38,7 +38,7 @@ def check_data_slim():
                     df_display = df
                 
                 print(df_display.to_string(index=False))
-                print(f"\n📊 Total Rows: {len(df)}")
+                print(f"\n Total Rows: {len(df)}")
 
 if __name__ == "__main__":
     check_data_slim()
