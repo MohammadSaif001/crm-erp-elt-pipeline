@@ -70,7 +70,7 @@ def data_base_connection():
         print(f"Connection Error: {e}")
         return None  
     
-#! Customer Load Function
+#! 1.Customer Load Function
 def load_cust_info():
     
     start_time = time.time()
@@ -112,6 +112,7 @@ def load_cust_info():
         df['cst_gndr']            = df.get('cst_gndr')
         df['cst_create_date_raw'] = df.get('cst_create_date')
 
+
         #* Select columns to write
         final_cols = [
             'raw_row', 
@@ -121,8 +122,7 @@ def load_cust_info():
             'cst_lastname', 
             'cst_marital_status',
             'cst_gndr', 
-            'cst_create_date_raw',
-            'load_timestamp'
+            'cst_create_date_raw',   
         ]
         
         #* Filter dataframe to only include columns that actually exist now
@@ -159,7 +159,7 @@ def load_cust_info():
             )    
         print(f"Processing Error: {e}")
 
-#! Sales Load Function
+#! 2. Sales Load Function
 def load_sales_details_info():
     start_time = time.time()
     source = "source_crm"
@@ -195,6 +195,7 @@ def load_sales_details_info():
         #! .get() 
 
         df['ingest_id']            = df.get('ingest_id')
+        df['sales_prd_key']        = df.get('sls_prd_key')
         df['sales_ord_num']        = df.get('sls_ord_num')
         df['sales_cust_id']        = df.get('sls_cust_id')
         df['sales_order_date_raw'] = df.get('sls_order_dt')
@@ -207,6 +208,7 @@ def load_sales_details_info():
 
         final_cols =['ingest_id',
                     'raw_row',
+                    'sales_prd_key',
                     'sales_ord_num',
                     'sales_cust_id',
                     'sales_order_date_raw',
@@ -247,7 +249,7 @@ def load_sales_details_info():
         )
         print(f"Processing Error: {e}")
 
-#! Product Load Function
+#! 3.Product Load Function
 def load_prd_info():
     start_time = time.time()
     source = "source_crm"
