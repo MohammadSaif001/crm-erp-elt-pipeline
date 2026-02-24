@@ -176,7 +176,8 @@ def run_silver_pipeline(table_name: str):
 
     data_quality_checks(df)
 
-    print(df.head(10))
+    print(df.info())
+    print(df.isnull().sum())
 
 #     # # check nulls after normalization
 #     # df_clean, df_deleted = deduplicate(df)

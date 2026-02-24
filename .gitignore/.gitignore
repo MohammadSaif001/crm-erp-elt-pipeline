@@ -2,6 +2,7 @@
 *.json
 *.yml
 *.yaml
+*.ipynb
 
 # Environment files
 .env

@@ -1,0 +1,1 @@
+df.drop("raw_row",axis=1,inplace=True)
