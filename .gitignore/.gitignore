@@ -2,8 +2,12 @@
 *.json
 *.yml
 *.yaml
-*.ipynb
 
+# Logs
+logs/
+*.log
+# Notebooks like Jupyter
+*.ipynb
 
 # Environment files
 .env
