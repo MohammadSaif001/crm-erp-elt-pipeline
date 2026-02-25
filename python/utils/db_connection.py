@@ -1,6 +1,6 @@
 # File: python/utils/db_connection.py
 import json
-import os
+import logging
 from sqlalchemy import create_engine
 from urllib.parse import quote_plus
 
@@ -14,7 +14,7 @@ def load_config():
     config_path = get_config_path()
     
     # Debugging ke liye print (optional)
-    print(f"Loading config from: {config_path}")
+    logging.info(f"Loading config from: {config_path}")
 
     with open(config_path, "r") as file:
         return json.load(file)

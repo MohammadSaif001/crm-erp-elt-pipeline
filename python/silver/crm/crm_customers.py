@@ -1,9 +1,8 @@
 import os
 import sys
-import time
 import logging
-import numpy as np
 import pandas as pd
+from sqlalchemy import String, DateTime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
@@ -11,10 +10,6 @@ python_folder = os.path.dirname(silver_folder)
 
 if python_folder not in sys.path:
     sys.path.append(python_folder)             # .../python
-
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
-
 
 from utils.db_connection import get_engine
 from utils.paths import get_raw_data_path
@@ -32,17 +27,16 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
 #! Define schema for data types
-schema ={
+schema_customer ={
     "cst_id"              : "string",
     "cst_key"             : "string",
     "cst_firstname"       : "string",
     "cst_lastname"        : "string",
     "cst_marital_status"  : "string",
     "cst_gndr"            : "string",
-    "cst_create_date_raw" : "datetime64[ns]",
-    "loaded_at"          : "datetime64[ns]"
+    "cst_create_date_raw" : "datetime64[ns]"
     }
-# TODO : Implement the remaining functions below as needed in ETL process or pipeline.
+
 #! combined normalization function for all string columns in the dataframe
 def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     str_cols = df.select_dtypes(include="string").columns
@@ -84,8 +78,6 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 
     return df
 
-#! data quality checks function to identify duplicates based on
-#!primary key and log the summary of duplicates found in the dataframe
 def data_quality_checks(df: pd.DataFrame):  
     PRIMARY_KEY = ["cst_id"]
     dup_mask = df.duplicated(subset=PRIMARY_KEY, keep=False)
@@ -140,7 +132,7 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
 #! clean function for deleting duplicate records 
 def deduplicate(df: pd.DataFrame):
     PRIMARY_KEY = ["cst_id"]
-    TIMESTAMP_COL = "loaded_at"
+    TIMESTAMP_COL = "cst_create_date_raw"
 
     if df.empty:
         logging.info("[DEDUP] Empty DataFrame.")
@@ -160,7 +152,7 @@ def deduplicate(df: pd.DataFrame):
     deleted_rows = df_sorted[dup_mask].copy()
     if not deleted_rows.empty:
         logging.info(f"[DEDUP] Found {len(deleted_rows)} duplicate rows based on {PRIMARY_KEY}")
-        # logging.info(f"[DEDUP] Sample duplicates:\n{deleted_rows.head()}")
+    
 
     #! Logging
     logging.info(f"[DEDUP] Total rows   : {len(df)}")
@@ -168,20 +160,31 @@ def deduplicate(df: pd.DataFrame):
     logging.info(f"[DEDUP] Deleted rows : {len(deleted_rows)}")
     return kept_rows, deleted_rows
 
-def run_silver_pipeline(table_name: str):
-    df = extract_from_bronze(table_name)
-    df = enforce_schema(df, schema)     # object → string, datetime → datetime64, etc.
-    df = normalize_data(df)           
-    df = standardize_data(df) # standardize gender and marital status values  
+def run_customers_pipeline(table_name: str):
+    df_customers = extract_from_bronze(table_name)
+    df_customers = enforce_schema(df_customers, schema_customer) # object → string, datetime → datetime64, etc.
+    df_customers = normalize_data(df_customers)           
+    df_customers = standardize_data(df_customers) # standardize gender and marital status values  
 
-    data_quality_checks(df)
-
-    print(df.info())
-    print(df.isnull().sum())
-
-#     # # check nulls after normalization
-#     # df_clean, df_deleted = deduplicate(df)
-#     # load_to_silver(df_clean, table_name)
+    data_quality_checks(df_customers) # log any duplicates found into log file (but do not remove yet)
+    df_customers, df_duplicates = deduplicate(df_customers) # remove duplicates based on cst_id, keep latest loaded_at record
+    
+    df_customers.to_sql(
+        name = "crm_customers_info",
+        con  = get_engine("silver"),
+         if_exists = "replace",
+         index=False,
+         dtype={
+            "cst_id"              : String(100),
+            "cst_key"             : String(100),
+            "cst_firstname"       : String(100),
+            "cst_lastname"        : String(100),
+            "cst_marital_status"  : String(100),
+            "cst_gndr"            : String(100),
+            "cst_create_date_raw" : DateTime()
+         },
+         chunksize=1000
+         )
 
 if __name__ == "__main__":
-    run_silver_pipeline("crm_customers_info")
+    run_customers_pipeline("crm_customers_info")

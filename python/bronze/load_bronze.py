@@ -142,7 +142,7 @@ def load_cust_info():
         df_final.to_sql(
             name='crm_customers_info',
             con=engine,
-            if_exists='append',
+            if_exists="replace",
             index=False,
             dtype=cast(Any, dtype_map)
         )
@@ -232,7 +232,7 @@ def load_sales_details_info():
         df_final.to_sql(
             name='crm_sales_details',
             con=engine,
-            if_exists='append',
+            if_exists="replace",
             index=False,
             dtype=cast(Any, dtype_map)
         )
@@ -313,7 +313,7 @@ def load_prd_info():
         df_final.to_sql(
             name='crm_prd_info',
             con=engine,
-            if_exists='append',
+            if_exists="replace",
             index=False,
             dtype=cast(Any, dtype_map)
         )
@@ -387,7 +387,7 @@ def load_erp_cust_az12():
         df_final.to_sql(
             name='erp_cust_az12',
             con=engine,
-            if_exists='append',
+            if_exists="replace",
             index=False,
             dtype=cast(Any, dtype_map)
         )
@@ -433,13 +433,11 @@ def load_erp_location_a101():
         df = add_raw_row(df)
 
         #! 3.Colunmn Mapping
-        df['ingest_id']       = df.get('ingest_id')
         df['cid']             = df.get('cid')
         df['country_name']    = df.get('cntry')
         df['loaded_at']       = pd.Timestamp.now()
 
-        final_cols = ['ingest_id',
-                    'raw_row',
+        final_cols = ['raw_row',
                     'cid',
                     'country_name',
                     'loaded_at']
@@ -457,7 +455,7 @@ def load_erp_location_a101():
         df_final.to_sql(
             name='erp_location_a101',
             con=engine,
-            if_exists='append',
+            if_exists="replace",
             index=False,
             chunksize=1000,
             dtype=cast(Any, dtype_map)
@@ -530,7 +528,7 @@ def load_erp_px_cat_g1v2():
         df_final.to_sql(
             name='erp_px_cat_g1v2',
             con=engine,
-            if_exists='append',
+            if_exists="replace",
             index=False,
             dtype=cast(Any, dtype_map)
         )

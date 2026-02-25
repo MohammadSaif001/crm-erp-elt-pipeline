@@ -50,8 +50,7 @@ CREATE TABLE IF NOT EXISTS erp_cust_az12 (
   loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS erp_location_al01 (
-  ingest_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS erp_location_a101 (
   raw_row JSON NOT NULL,
   cid VARCHAR(100) NULL,
   country_name VARCHAR(255) NULL,
@@ -67,6 +66,3 @@ CREATE TABLE IF NOT EXISTS erp_px_cat_g1v2 (
   maintenance_raw VARCHAR(100) NULL,
   loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-USE bronze_db;
-
-SELECT * FROM crm_sales_details;

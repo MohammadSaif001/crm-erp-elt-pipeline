@@ -1,7 +1,9 @@
 import os
 import sys
 import logging
+import logging
 import pandas as pd
+from sqlalchemy import String, Integer, Float, DateTime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
@@ -9,10 +11,6 @@ python_folder = os.path.dirname(silver_folder)
 
 if python_folder not in sys.path:
     sys.path.append(python_folder)             # .../python
-
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
-
 
 from utils.db_connection import get_engine
 from utils.paths import get_raw_data_path
@@ -31,7 +29,7 @@ logging.basicConfig(
     )
 
 #! Define expected schema for sales data
-schema ={
+schema_sales = {
     "sales_ord_num"       : "string",
     "sales_prd_key"       : "string",
     "sales_cust_id"       : "string",
@@ -40,8 +38,7 @@ schema ={
     "sales_price"         : "float64",
     "sales_order_date_raw": "datetime64[ns]",
     "sales_ship_date_raw" : "datetime64[ns]",
-    "sales_due_date_raw"  : "datetime64[ns]",
-    "loaded_at"           : "datetime64[ns]"
+    "sales_due_date_raw"  : "datetime64[ns]"
     }
 
 #!Schema enforcement function to ensure data types are correct and handle errors gracefully.
@@ -169,20 +166,36 @@ def clean_sales_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
     
-def main():
-    df = extract_from_bronze("crm_sales_details")
+def run_sales_pipeline(table_name: str):
+    df_sales = extract_from_bronze(table_name)
+    df_sales = enforce_schema(df_sales, schema_sales)
+    df_sales = normalize_data(df_sales)
+    df_sales = datetime_conversion(df_sales)
 
-    df = enforce_schema(df, schema)
-    df = normalize_data(df)
-    df = datetime_conversion(df)
-
-    valid_df, invalid_df = validate_data(df)
+    valid_df, invalid_df = validate_data(df_sales)
 
     logging.info(f"Valid records: {len(valid_df)}")
     logging.info(f"Invalid records: {len(invalid_df)}")
 
     valid_df = clean_sales_data(valid_df)
-
-    print(valid_df.head())
+    valid_df.to_sql(
+        name = "crm_sales_details",
+        con  = get_engine("silver"),
+        if_exists = "replace",
+        index=False,
+        dtype={
+            "sales_ord_num"       : String(100),
+            "sales_prd_key"       : String(100),
+            "sales_cust_id"       : String(100),
+            "sales_sales"         : Float(12,2),
+            "sales_quantity"      : Integer(),
+            "sales_price"         : Float(10,2),
+            "sales_order_date_raw":DateTime(),
+            "sales_ship_date_raw" :DateTime(),
+            "sales_due_date_raw"  :DateTime(),
+            "loaded_at"           :DateTime()
+         },
+         chunksize=1000
+         )
 if __name__ == "__main__":
-    main()
+    run_sales_pipeline("crm_sales_details")

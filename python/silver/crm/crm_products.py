@@ -1,19 +1,15 @@
 import os
 import sys
 import logging
-import numpy as np
 import pandas as pd
+from sqlalchemy import String, Integer, Float, DateTime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
 python_folder = os.path.dirname(silver_folder)
 
 if python_folder not in sys.path:
-    sys.path.append(python_folder)             # .../python
-
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
-
+    sys.path.append(python_folder) 
 
 from utils.db_connection import get_engine
 from utils.paths import get_raw_data_path
@@ -25,21 +21,14 @@ def extract_from_bronze(table_name: str) -> pd.DataFrame:
     except Exception as e:
         raise RuntimeError(f"Failed to extract from bronze table {table_name}") from e
     
-logging.basicConfig(
-    filename=r"D:\data_engineering_project\data\logs\pipeline.log",
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
-)
-
-schema ={
+schema_products = {
     "prd_id"              : "int",
     "prd_key"             : "string",
     "prd_name"            : "string",
     "prd_cost"            : "float64",
     "prd_line"            : "string",
     "prd_start_date_raw"  : "datetime64[ns]",
-    "prd_end_date_raw"    : "datetime64[ns]",
-    "loaded_at"           : "datetime64[ns]"
+    "prd_end_date_raw"    : "datetime64[ns]"
     }
 
 def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
@@ -93,17 +82,18 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
 	"M": "Mountain",
 	"T": "Touring",
 	"S": "Other sales"
-})
+        })
     )
     df["prd_line"] = df["prd_line"].fillna("Unknown")
     df["prd_cost"] = df["prd_cost"].fillna(0)
     df["prd_end_date_raw"] = df["prd_start_date_raw"].shift(-1) + pd.Timedelta(weeks=26)
     return df
-#!transformation function to create new columns based on existing ones
 
+#!transformation function to create new columns based on existing ones
 def transform_crm_products(df: pd.DataFrame) -> pd.DataFrame:
     df["cat_id"] = df["prd_key"].str[:5]
-    df["prd_key_"] = df["prd_key"].str[6:]
+    df["cat_id"] = df["cat_id"].str.replace("-", "_", regex=False)
+    df["prd_key"] = df["prd_key"].str[6:]
     return df
 
 #! data quality checks function to identify duplicates
@@ -127,15 +117,32 @@ def data_quality_checks(df: pd.DataFrame):
         logging.info("No duplicates found")
     
 
-def main():
-    df= extract_from_bronze("crm_prd_info")
-    df = enforce_schema(df, schema)
-    df = normalize_data(df)
-    df = standardize_data(df)
-    df = transform_crm_products(df)
-    data_quality_checks(df)
-    print(df.info())
-    print(df.isnull().sum())
+def run_products_pipeline(table_name: str):
+    df_products = extract_from_bronze(table_name)
+    df_products = enforce_schema(df_products, schema_products)
+    df_products = normalize_data(df_products)
+    df_products = standardize_data(df_products)
+    df_products = transform_crm_products(df_products)
+    data_quality_checks(df_products) 
+    df_products.to_sql(
+        name = "crm_prd_info",
+        con  = get_engine("silver"),
+        if_exists = "replace",
+        index=False,
+        dtype={
+            "prd_id"              : String(100),
+            "prd_key"             : String(100),
+            "cat_id"              : String(100),
+            "prd_name"            : String(100),
+            "prd_line"            : String(100),
+            "prd_cost"            : Float(10,2),
+            "prd_start_date_raw"  : DateTime(),
+            "prd_end_date_raw"    : DateTime(),
+            "loaded_at"           : DateTime()
+         },
+         chunksize=1000
+         )
+    
 
 if __name__ == "__main__":
-    main()
+    run_products_pipeline("crm_prd_info")
