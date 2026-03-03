@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import pandas as pd
-from sqlalchemy import String, DateTime
+from sqlalchemy import String, Date, DateTime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
@@ -111,9 +111,6 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
             "f": "Female",
         })
     )
-    # Fill unmapped (including NULL) with Unknown
-    df["cst_gndr"] = df["cst_gndr"].fillna("Unknown")
-
 
     #!Marital Status Standardization
     df["cst_marital_status"] = (
@@ -125,63 +122,84 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
         })
     )
 
-    df["cst_marital_status"] = df["cst_marital_status"].fillna("Unknown")
+    df[["cst_gndr","cst_marital_status"]] = df[["cst_gndr","cst_marital_status"]].fillna("n/a")
 
     return df
 
 #! clean function for deleting duplicate records 
-def deduplicate(df: pd.DataFrame):
-    PRIMARY_KEY = ["cst_id"]
-    TIMESTAMP_COL = "cst_create_date_raw"
+def deduplicate_latest_by_date(
+    df: pd.DataFrame,
+    primary_key: str,
+    date_col: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     if df.empty:
         logging.info("[DEDUP] Empty DataFrame.")
         return df, pd.DataFrame()
-    #!Sort so latest loaded_at comes first
-    df_sorted = df.sort_values(
-        by=TIMESTAMP_COL,
-        ascending=False
-    )
-    #!Identify duplicates (keep latest)
-    dup_mask = df_sorted.duplicated(
-        subset=PRIMARY_KEY,
-        keep="first"
-    )
-    #! Separate kept vs deleted rows
-    kept_rows = df_sorted[~dup_mask].copy()
-    deleted_rows = df_sorted[dup_mask].copy()
-    if not deleted_rows.empty:
-        logging.info(f"[DEDUP] Found {len(deleted_rows)} duplicate rows based on {PRIMARY_KEY}")
-    
 
-    #! Logging
+    df = df.copy()
+    sort_cols = [primary_key, date_col]
+    ascending_order = [True, False]    
+    # Sort so latest records come first per primary key
+    df_sorted = df.sort_values(by=sort_cols, ascending=ascending_order)
+    # Keep latest per primary key
+    kept_rows = df_sorted.drop_duplicates(subset=primary_key, keep="first")
+    #! Identify deleted rows based on index difference
+    deleted_rows = df_sorted[~df_sorted.index.isin(kept_rows.index)]
+	#! logging into log file for debugging and monitoring how many duplicates were found and removed
     logging.info(f"[DEDUP] Total rows   : {len(df)}")
     logging.info(f"[DEDUP] Kept rows    : {len(kept_rows)}")
     logging.info(f"[DEDUP] Deleted rows : {len(deleted_rows)}")
     return kept_rows, deleted_rows
+#! delete null values in the dataframe and log how many rows were deleted form PRIMARY_KEY column
+def remove_null_primary_keys(df: pd.DataFrame, primary_key: str) -> pd.DataFrame:
+    initial_count = len(df)
+    
+    df_clean = df.dropna(subset=[primary_key])
+
+    removed_count = initial_count - len(df_clean)
+
+    if removed_count > 0:
+        logging.warning(
+            f"[NULL PRIMARY KEY REMOVED] {removed_count} rows removed where {primary_key} is NULL"
+        )
+
+    return df_clean
 
 def run_customers_pipeline(table_name: str):
     df_customers = extract_from_bronze(table_name)
     df_customers = enforce_schema(df_customers, schema_customer) # object → string, datetime → datetime64, etc.
     df_customers = normalize_data(df_customers)           
     df_customers = standardize_data(df_customers) # standardize gender and marital status values  
+    df_customers = remove_null_primary_keys(df_customers, primary_key="cst_id")
 
     data_quality_checks(df_customers) # log any duplicates found into log file (but do not remove yet)
-    df_customers, df_duplicates = deduplicate(df_customers) # remove duplicates based on cst_id, keep latest loaded_at record
-    
+    df_customers, df_duplicates = deduplicate_latest_by_date(
+        df_customers,
+        primary_key="cst_id",
+        date_col="cst_create_date_raw"
+    ) # remove duplicates based on cst_id, keep latest loaded_at record
+
+    df_customers = df_customers.rename(columns={
+        "cst_gndr": "cst_gender",
+        "cst_create_date_raw": "cst_create_date"
+    })
+    df_customers["loaded_at"] = pd.Timestamp.now()
+
     df_customers.to_sql(
         name = "crm_customers_info",
         con  = get_engine("silver"),
          if_exists = "replace",
          index=False,
          dtype={
-            "cst_id"              : String(100),
+            "cst_id"              : String(50),
             "cst_key"             : String(100),
-            "cst_firstname"       : String(100),
-            "cst_lastname"        : String(100),
-            "cst_marital_status"  : String(100),
-            "cst_gndr"            : String(100),
-            "cst_create_date_raw" : DateTime()
+            "cst_firstname"       : String(200),
+            "cst_lastname"        : String(200),
+            "cst_marital_status"  : String(50),
+            "cst_gender"          : String(50),
+            "cst_create_date"     : Date(),
+            "loaded_at"           : DateTime()
          },
          chunksize=1000
          )

@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import pandas as pd
-from sqlalchemy import String, Integer, Float, DateTime
+from sqlalchemy import Date, String, Numeric, DateTime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
@@ -84,9 +84,12 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
 	"S": "Other sales"
         })
     )
-    df["prd_line"] = df["prd_line"].fillna("Unknown")
+    df["prd_line"] = df["prd_line"].fillna("n/a")
     df["prd_cost"] = df["prd_cost"].fillna(0)
-    df["prd_end_date_raw"] = df["prd_start_date_raw"].shift(-1) + pd.Timedelta(weeks=26)
+    # df["prd_end_date_raw"] = df["prd_start_date_raw"].shift(-1) + pd.Timedelta(weeks=26)
+ #! window function [LEAD]
+    df = df.sort_values(by=["prd_key", "prd_start_date_raw"])
+    df["prd_end_date_raw"] = (df.groupby("prd_key")["prd_start_date_raw"].shift(-1) - pd.Timedelta(days=1))
     return df
 
 #!transformation function to create new columns based on existing ones
@@ -124,20 +127,27 @@ def run_products_pipeline(table_name: str):
     df_products = standardize_data(df_products)
     df_products = transform_crm_products(df_products)
     data_quality_checks(df_products) 
+
+    df_products = df_products.rename(columns={
+        "prd_start_date_raw": "prd_start_dt",
+        "prd_end_date_raw": "prd_end_dt"
+    })
+    df_products["loaded_at"] = pd.Timestamp.now()
+
     df_products.to_sql(
         name = "crm_prd_info",
         con  = get_engine("silver"),
         if_exists = "replace",
         index=False,
         dtype={
-            "prd_id"              : String(100),
+            "prd_id"              : String(50),
             "prd_key"             : String(100),
             "cat_id"              : String(100),
-            "prd_name"            : String(100),
+            "prd_name"            : String(255),
             "prd_line"            : String(100),
-            "prd_cost"            : Float(10,2),
-            "prd_start_date_raw"  : DateTime(),
-            "prd_end_date_raw"    : DateTime(),
+            "prd_cost"            : Numeric(12,2),
+            "prd_start_dt"        : Date(),
+            "prd_end_dt"          : Date(),
             "loaded_at"           : DateTime()
          },
          chunksize=1000

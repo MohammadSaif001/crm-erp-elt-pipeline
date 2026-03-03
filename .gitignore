@@ -27,3 +27,6 @@ Desktop.ini
 
 # Local data/state
 data/processed/
+
+# Ignore test outputs
+.pytest_cache/

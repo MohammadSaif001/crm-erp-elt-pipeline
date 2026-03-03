@@ -3,7 +3,7 @@ import sys
 import logging
 import logging
 import pandas as pd
-from sqlalchemy import String, Integer, Float, DateTime
+from sqlalchemy import String, Integer, Numeric, DateTime, Date
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
@@ -178,6 +178,15 @@ def run_sales_pipeline(table_name: str):
     logging.info(f"Invalid records: {len(invalid_df)}")
 
     valid_df = clean_sales_data(valid_df)
+    valid_df = valid_df.drop(columns=["ingest_id"], errors="ignore")
+
+    valid_df = valid_df.rename(columns={
+        "sales_order_date_raw": "sales_order_date",
+        "sales_ship_date_raw": "sales_ship_date",
+        "sales_due_date_raw": "sales_due_date"
+    })
+    valid_df["loaded_at"] = pd.Timestamp.now()
+
     valid_df.to_sql(
         name = "crm_sales_details",
         con  = get_engine("silver"),
@@ -186,14 +195,14 @@ def run_sales_pipeline(table_name: str):
         dtype={
             "sales_ord_num"       : String(100),
             "sales_prd_key"       : String(100),
-            "sales_cust_id"       : String(100),
-            "sales_sales"         : Float(12,2),
+            "sales_cust_id"       : String(50),
+            "sales_sales"         : Numeric(12,2),
             "sales_quantity"      : Integer(),
-            "sales_price"         : Float(10,2),
-            "sales_order_date_raw":DateTime(),
-            "sales_ship_date_raw" :DateTime(),
-            "sales_due_date_raw"  :DateTime(),
-            "loaded_at"           :DateTime()
+            "sales_price"         : Numeric(12,2),
+            "sales_order_date"    : Date(),
+            "sales_ship_date"     : Date(),
+            "sales_due_date"      : Date(),
+            "loaded_at"           : DateTime()
          },
          chunksize=1000
          )

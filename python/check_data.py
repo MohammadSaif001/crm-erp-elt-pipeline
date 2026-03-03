@@ -1,7 +1,12 @@
 import pandas as pd
 import sys
 import os
+import logging
 from sqlalchemy import text
+from dq_checks.check_nulls import check_nulls, run_null_checks
+from dq_checks.check_row_counts import get_row_counts, run_row_count_report
+from dq_checks.check_duplicates import check_duplicates, run_duplicate_checks
+from dq_checks.check_fk_integrity import check_fk_integrity, run_fk_integrity_report
 
 # Path setup
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,7 +21,8 @@ def check_data_slim():
     pd.set_option('display.width', 1000)
     
     engine = get_engine("bronze")
-    tables_to_check = ['crm_customers_info', 'crm_prd_info']
+    tables_to_check = ['crm_customers_info', 'crm_prd_info','crm_sales_details',
+                       'erp_location_a101','erp_cust_az12','erp_px_cat_g1v2']
 
     for table in tables_to_check:
         print(f"\n{'='*60}")
@@ -42,3 +48,8 @@ def check_data_slim():
 
 if __name__ == "__main__":
     check_data_slim()
+    # Each returns True if all checks pass, False otherwise
+    all_ok = run_row_count_report()
+    no_dups = run_duplicate_checks("silver")
+    no_nulls = run_null_checks("silver")
+    fk_ok = run_fk_integrity_report()

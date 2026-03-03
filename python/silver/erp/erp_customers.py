@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import pandas as pd 
-from sqlalchemy import String,DateTime
+from sqlalchemy import String, Date, DateTime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 silver_folder = os.path.dirname(current_dir)
@@ -82,7 +82,7 @@ customer_replacemts = {
     "gender_raw": {
         "M": "Male",
         "F": "Female",
-        "": pd.NA
+        "": "n/a"
     }
 }
 
@@ -130,6 +130,12 @@ def drop_technical_columns(df: pd.DataFrame,drop_columns = "raw_row") -> pd.Data
     df = df.drop(columns=drop_columns, errors="ignore")
     return df
 
+def transform_erp_cid_column(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        logging.warning("Input dataframe is empty. Skipping transformation.")
+        return df
+    df["cid"] = df["cid"].astype(str).str.replace("-", "", regex=False)
+    return df
 
 def run_customer_pipeline():
     logging.info("Starting ERP Customers Silver Pipeline")
@@ -144,22 +150,25 @@ def run_customer_pipeline():
         logging.info("Customer ID standardization completed.")
         
         df_customer = apply_value_replacements(df_customer, customer_replacemts)
+        df_customer["gender_raw"] = df_customer["gender_raw"].fillna("n/a")
         logging.info("Value replacements applied.")
         
         df_customer = drop_technical_columns(df_customer)
+        df_customer = df_customer.drop(columns=["ingest_id"], errors="ignore")
         logging.info("Technical columns dropped.")
         
-        #! Save to silver layer (not implemented here)
+        #! Save to silver layer
+        df_customer["loaded_at"] = pd.Timestamp.now()
         df_customer.to_sql(
-            schema="silver_db",
             name = "erp_cust_az12",
             con  = get_engine("silver"),
             if_exists = "replace",
             index=False,
             dtype={
                 "cid" : String(100),
-                "birth_date_raw": DateTime(),
-                "gender_raw": String(100)
+                "birth_date_raw": Date(),
+                "gender_raw": String(50),
+                "loaded_at": DateTime()
             },
             chunksize=1000
         )
@@ -176,25 +185,29 @@ def run_location_pipeline():
         logging.info("Schema enforcement completed for location data.")
         
         df_location = apply_value_replacements(df_location, location_replacements)
+        df_location["country_name"] = df_location["country_name"].fillna("n/a")
         logging.info("Value replacements applied for location data.")
         
         df_location = drop_technical_columns(df_location)
         logging.info("Technical columns dropped for location data.")
 
-        #! Save to silver layer (not implemented here)
-        # save_to_silver(df_location, "erp_customer_locations")
+        df_location = transform_erp_cid_column(df_location)
+        logging.info("CID transformation completed for location data.")
+
+        #! Save to silver layer
+        df_location["loaded_at"] = pd.Timestamp.now()
         df_location.to_sql(
-        schema="silver_db",
-        name="erp_location_a101",
-        con=get_engine("silver"),
-        if_exists="replace",
-        index=False,
-        dtype={
-            "cid": String(100),
-            "country_name": String(100)
-        },
-    chunksize=1000
-)
+            name="erp_location_a101",
+            con=get_engine("silver"),
+            if_exists="replace",
+            index=False,
+            dtype={
+                "cid": String(100),
+                "country_name": String(255),
+                "loaded_at": DateTime()
+            },
+            chunksize=1000
+        )
         logging.info("ERP Customer Locations Silver Pipeline completed successfully.")
     except Exception as e:
         logging.error(f"Location pipeline failed: {e}", exc_info=True)
@@ -206,10 +219,11 @@ def run_category_pipeline():
         logging.info(f"Extracted {len(df_category)} records from bronze.")
         
         df_category = drop_technical_columns(df_category)
+        df_category = df_category.drop(columns=["ingest_id"], errors="ignore")
         logging.info("Technical columns dropped for category data.")
     
+        df_category["loaded_at"] = pd.Timestamp.now()
         df_category.to_sql(
-            schema ="silver_db",
             name   = "erp_px_cat_g1v2",
             con  = get_engine("silver"),
             if_exists = "replace",
@@ -217,7 +231,9 @@ def run_category_pipeline():
             dtype={
                 "id" : String(100),
                 "cat": String(100),
-                "subcat": String(100)
+                "subcat": String(100),
+                "maintenance_raw": String(100),
+                "loaded_at": DateTime()
             },
             chunksize=1000
         )
