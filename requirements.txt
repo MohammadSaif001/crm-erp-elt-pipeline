@@ -1,0 +1,9 @@
+# Core Dependencies
+pandas>=1.5.0
+numpy>=1.23.0
+sqlalchemy>=1.4.0,<3.0.0
+pymysql>=1.0.0
+pyyaml>=6.0
+
+# Testing
+pytest>=7.0.0
