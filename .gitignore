@@ -30,3 +30,6 @@ data/processed/
 
 # Ignore test outputs
 .pytest_cache/
+
+# Ignore nul
+nul
