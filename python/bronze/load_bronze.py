@@ -17,20 +17,22 @@ if python_folder not in sys.path:
 
 
 from utils.db_connection import get_engine
-from utils.paths import get_raw_data_path
+from utils.paths import get_raw_data_path, get_logs_path, get_project_root
 
 from utils.ingestion_checker import(
     PROCESSED_FILE,
     is_file_processed,
     mark_file_processed
 )
-print("PROCESSED_FILE PATH =", PROCESSED_FILE)
+
+log_file_path = get_logs_path("pipeline.log")
 
 logging.basicConfig(
-    filename=r"D:\data_engineering_project\data\logs\pipeline.log",
+    filename=log_file_path,
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
+logger = logging.getLogger(__name__)
 
 #! Bronze CSV Reader Function
 def read_bronze_csv(csv_path: str) -> pd.DataFrame:
@@ -64,10 +66,10 @@ def add_raw_row(df: pd.DataFrame) -> pd.DataFrame:
 def data_base_connection():
     try:
         engine = get_engine("bronze")
-        print("Database connected successfully.")
+        logger.info("Database connected successfully for bronze layer.")
         return engine  # Return it!
     except Exception as e:
-        print(f"Connection Error: {e}")
+        logger.exception("Connection error while creating bronze DB engine: %s", e)
         return None  
     
 #! 1.Customer Load Function
@@ -80,14 +82,12 @@ def load_cust_info():
     table_name = "crm_customers_info"
     logging.info(f'[START] Loading table: {table_name}')
 
-    print("Starting Bronze Load: Customers.")
     engine =data_base_connection()
     if engine is None:
-        print("Exiting due to database connection failure.")
+        logging.warning("Exiting due to database connection failure.")
         return
     try:
         if is_file_processed(source, file_name, bronze_table):
-            print(f"Skipping {bronze_table} - already processed.")
             logging.info(f'[SKIP] Table already processed: {table_name}')
             return
 
@@ -137,7 +137,7 @@ def load_cust_info():
             "cst_firstname": types.VARCHAR(100)
         }
 
-        print(f"Writing {len(df_final)} rows to table 'crm_customers_info'...")
+        logging.info(f"Writing {len(df_final)} rows to table 'crm_customers_info'...")
         
         df_final.to_sql(
             name='crm_customers_info',
@@ -151,13 +151,13 @@ def load_cust_info():
         logging.info(
             f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
             )
-        print("Success: Data Loaded to bronze_db crm_customers_info table.")
+        logging.info("Success: Data Loaded to bronze_db crm_customers_info table.")
 
     except Exception as e:
         logging.exception(
             f"[ERROR] Loading table: {table_name} | Error: {e}"
             )    
-        print(f"Processing Error: {e}")
+        logging.warning(f"Processing Error: {e}")
 
 #! 2. Sales Load Function
 def load_sales_details_info():
@@ -169,17 +169,16 @@ def load_sales_details_info():
     logging.info(f'[START] Loading table: {table_name}')
 
 
-    print("Starting Bronze Load: Sales.")
+
     #! Connect to Database
     engine =data_base_connection()
     if engine is None:
-        print("Exiting due to database connection failure.")
+        logging.warning("Exiting due to database connection failure.")
         return
 
     try:
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
-            print(f"Skipping {bronze_table} - already processed.")
             logging.info(f"[SKIP] Table already processed: {table_name}")   
             return
         
@@ -228,7 +227,7 @@ def load_sales_details_info():
             "sales_order_key": types.VARCHAR(100),
             "sales_order_id": types.VARCHAR(100)
         }
-        print(f"Writing {len(df_final)} rows to table 'crm_sales_details'...")
+        logging.info(f"Writing {len(df_final)} rows to table 'crm_sales_details'...")
         df_final.to_sql(
             name='crm_sales_details',
             con=engine,
@@ -237,7 +236,7 @@ def load_sales_details_info():
             dtype=cast(Any, dtype_map)
         )
         
-        print("Success: Data Loaded to bronze_db crm_sales_details table.")
+        logging.info("Success: Data Loaded to bronze_db crm_sales_details table.")
         mark_file_processed(source, file_name, bronze_table)
         elapsed_time = time.time() - start_time
         logging.info(
@@ -247,7 +246,7 @@ def load_sales_details_info():
         logging.exception(
             f"[ERROR] Loading table: {table_name} | Error: {e}"
         )
-        print(f"Processing Error: {e}")
+        logging.warning(f"Processing Error: {e}")
 
 #! 3.Product Load Function
 def load_prd_info():
@@ -258,18 +257,16 @@ def load_prd_info():
     table_name = "crm_prd_info"
     logging.info(f'[START] Loading table: {table_name}')
 
-    print("Starting Bronze Load: Product.")
     
     #! Connect to Database 
     engine =data_base_connection()
     if engine is None:
-        print("Exiting due to database connection failure.")
+        logging.warning("Exiting due to database connection failure.")
         return
 
     try:
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
-            print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
             logging.info(f"[SKIP] Table already processed: {table_name}")
             return
     
@@ -309,7 +306,7 @@ def load_prd_info():
             "prd_name": types.VARCHAR(100)
         }
         #! console log
-        print(f"Writing {len(df_final)} rows to table 'crm_prd_info'...")
+        logging.info(f"Writing {len(df_final)} rows to table 'crm_prd_info'...")
         df_final.to_sql(
             name='crm_prd_info',
             con=engine,
@@ -318,17 +315,18 @@ def load_prd_info():
             dtype=cast(Any, dtype_map)
         )
         
-        print("Success: Data Loaded to bronze_db crm_prd_info table.")
+    
         elapsed_time = time.time() - start_time
         logging.info(
             f"[END] Loaded table: {table_name} | Time taken: {elapsed_time:.2f} seconds"
         )
+        logging.info("Success: Data Loaded to bronze_db crm_prd_info table.")
         mark_file_processed(source, file_name, bronze_table)
     except Exception as e:
         logging.error(
             f"[ERROR] Loading table: {table_name} | Error: {e}"
         )
-        print(f"Processing Error: {e}")
+        logging.error(f"[ERROR] Processing Error: {e}")
 
 #! ERP Load Functions
 def load_erp_cust_az12():
@@ -338,19 +336,16 @@ def load_erp_cust_az12():
     bronze_table = "erp_cust_az12"
     table_name = "erp_cust_az12"
     logging.info(f'[START] Loading table: {table_name}')
-
-
-    print("Starting Bronze Load: ERP Customer.")
     
     #! Connect to Database
     engine =data_base_connection()
     if engine is None:
-        print("Exiting due to database connection failure.")
+        logging.warning("[WARNING] Exiting due to database connection failure.")
         return
     try:
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
-            print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"[SKIP] File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
             logging.info(f"[SKIP] Table already processed: {table_name}")
             return
         csv_path = get_raw_data_path(os.path.join
@@ -383,7 +378,7 @@ def load_erp_cust_az12():
             "cid": types.VARCHAR(50)
         }
         #! console log
-        print(f"Writing {len(df_final)} rows to table 'erp_cust_az12'...")
+        logging.info(f"Writing {len(df_final)} rows to table 'erp_cust_az12'...")
         df_final.to_sql(
             name='erp_cust_az12',
             con=engine,
@@ -392,7 +387,7 @@ def load_erp_cust_az12():
             dtype=cast(Any, dtype_map)
         )
         
-        print("Success: Data Loaded to bronze_db erp_cust_az12 table.")
+        logging.info("Success: Data Loaded to bronze_db erp_cust_az12 table.")
         mark_file_processed(source, file_name, bronze_table)
         elapsed_time = time.time() - start_time
         logging.info(
@@ -402,7 +397,7 @@ def load_erp_cust_az12():
         logging.exception(
             f"[ERROR] Loading table: {table_name} | Error: {e}"
         )
-        print(f"Processing Error: {e}")
+        logging.warning(f"Processing Error: {e}")
 
 def load_erp_location_a101():
     start_time = time.time()
@@ -412,17 +407,17 @@ def load_erp_location_a101():
     table_name = "erp_location_a101"
     logging.info(f'[START] Loading table: {table_name}')
 
-    print("Starting Bronze Load: ERP Location.")
+    logging.info("Starting Bronze Load: ERP Location.")
     
     #! Connect to Database
     engine =data_base_connection()
     if engine is None:
-        print("Exiting due to database connection failure.")
+        logging.warning("Exiting due to database connection failure.")
         return
     try:
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):
-            print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"[SKIP] File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
             logging.info(f"[SKIP] Table already processed: {table_name}")
             return
         csv_path = get_raw_data_path(os.path.join
@@ -451,7 +446,7 @@ def load_erp_location_a101():
             "cid": types.VARCHAR(50)
         }
         #! console log
-        print(f"Writing {len(df_final)} rows to table 'erp_location_a101'")
+        logging.info(f"Writing {len(df_final)} rows to table 'erp_location_a101'")
         df_final.to_sql(
             name='erp_location_a101',
             con=engine,
@@ -461,7 +456,7 @@ def load_erp_location_a101():
             dtype=cast(Any, dtype_map)
         )
         
-        print("Success: Data Loaded to bronze_db erp_location_a101 table.")
+        logging.info("Success: Data Loaded to bronze_db erp_location_a101 table.")
         mark_file_processed(source, file_name, bronze_table)
         elapsed_time = time.time() - start_time
         logging.info(
@@ -479,17 +474,17 @@ def load_erp_px_cat_g1v2():
     bronze_table = "erp_px_cat_g1v2"
     table_name = "erp_px_cat_g1v2"
     logging.info(f'[START] Loading table: {table_name}')
-    print("Starting Bronze Load: ERP Category.")
+    logging.info("Starting Bronze Load: ERP Category.")
     
     #! Connect to Database
     engine =data_base_connection()
     if engine is None:
-        print("Exiting due to database connection failure.")
+        logging.warning("Exiting due to database connection failure.")
         return
     try:
         #! Check if file already processed
         if is_file_processed(source, file_name, bronze_table):  
-            print(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
+            logging.info(f"File '{file_name}' from source '{source}' already processed. Skipping ingestion.")
             logging.info(f"[SKIP] Table already processed: {table_name}")
             return
         csv_path = get_raw_data_path(os.path.join
@@ -524,7 +519,7 @@ def load_erp_px_cat_g1v2():
             "id": types.VARCHAR(50)
         }
         #! console log
-        print(f"Writing {len(df_final)} rows to table 'erp_px_cat_g1v2'...")
+        logging.info(f"Writing {len(df_final)} rows to table 'erp_px_cat_g1v2'...")
         df_final.to_sql(
             name='erp_px_cat_g1v2',
             con=engine,
@@ -533,7 +528,7 @@ def load_erp_px_cat_g1v2():
             dtype=cast(Any, dtype_map)
         )
         
-        print("Success: Data Loaded to bronze_db erp_px_cat_g1v2 table.")
+        logging.info("Success: Data Loaded to bronze_db erp_px_cat_g1v2 table.")
         mark_file_processed(source, file_name, bronze_table)
         elapsed_time = time.time() - start_time
         logging.info(
@@ -543,7 +538,7 @@ def load_erp_px_cat_g1v2():
         logging.exception(
             f"[ERROR] Loading table: {table_name} | Error: {e}"
         )
-        print(f"Processing Error: {e}")
+        logging.warning(f"Processing Error: {e}")
 
 #! Orchestration Function
 def run_bronze_pipeline():
@@ -551,7 +546,7 @@ def run_bronze_pipeline():
     Orchestrates complete Bronze layer ingestion.
     Entry point for local runs, schedulers, and future Airflow DAGs.
     """
-    print("Starting Bronze Layer Pipeline...")
+    logging.info("Starting Bronze Layer Pipeline...")
     batch_start = time.time()
     logging.info("[BATCH START] Bronze layer ingestion started")
     # CRM sources
@@ -564,12 +559,12 @@ def run_bronze_pipeline():
     load_erp_location_a101()
     load_erp_px_cat_g1v2()
 
-    print("Bronze Layer Pipeline Completed Successfully.")
+    logging.info("Bronze Layer Pipeline Completed Successfully.")
     batch_duration = time.time() - batch_start
     logging.info(
         f"[BATCH END] Bronze layer completed | Total time={batch_duration:.2f}s"
     )
-    print(f"Total Bronze Layer Time: {batch_duration:.2f} seconds.")
+    logging.info(f"Total Bronze Layer Time: {batch_duration:.2f} seconds.")
 def main():
     run_bronze_pipeline()
 
