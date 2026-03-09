@@ -2,7 +2,8 @@
 
 ### Medallion Architecture (Bronze > Silver > Gold) | Python + MySQL
 
-Author: **Mohammad Saif**
+**Author:** Mohammad Saif | Data Engineer  
+[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/) [![MySQL](https://img.shields.io/badge/MySQL-8.0-orange)](https://www.mysql.com/)
 
 ---
 
@@ -268,7 +269,7 @@ FK integrity rules validated:
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/MohammadSaif001/data-engineer-project.git
    cd data_engineering_project
    ```
 
@@ -314,6 +315,110 @@ Run the full end-to-end pipeline:
 ```bash
 python python/pipeline.py
 ```
+**Expected Output**
+```2026-03-09 01:04:32,101 | INFO | pipeline | Pipeline start
+2026-03-09 01:04:32,101 | INFO | [BATCH START] Bronze layer ingestion started
+2026-03-09 01:04:32,101 | INFO | [START] Loading table: crm_customers_info
+2026-03-09 01:04:32,101 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,229 | INFO | [SKIP] Table already processed: crm_customers_info
+2026-03-09 01:04:32,229 | INFO | [START] Loading table: crm_prd_info
+2026-03-09 01:04:32,229 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,231 | INFO | [SKIP] Table already processed: crm_prd_info
+2026-03-09 01:04:32,231 | INFO | [START] Loading table: crm_sales_details
+2026-03-09 01:04:32,233 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,235 | INFO | [SKIP] Table already processed: crm_sales_details
+2026-03-09 01:04:32,235 | INFO | [START] Loading table: erp_cust_az12
+2026-03-09 01:04:32,235 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,236 | INFO | [SKIP] Table already processed: erp_cust_az12
+2026-03-09 01:04:32,236 | INFO | [START] Loading table: erp_location_a101
+2026-03-09 01:04:32,236 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,236 | INFO | [SKIP] Table already processed: erp_location_a101
+2026-03-09 01:04:32,236 | INFO | [START] Loading table: erp_px_cat_g1v2
+2026-03-09 01:04:32,236 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,243 | INFO | [SKIP] Table already processed: erp_px_cat_g1v2
+2026-03-09 01:04:32,243 | INFO | [BATCH END] Bronze layer completed | Total time=0.14s
+2026-03-09 01:04:32,243 | INFO | ============================================================
+2026-03-09 01:04:32,243 | INFO | [START] Starting Silver Layer Pipeline
+2026-03-09 01:04:32,243 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:32,570 | INFO | Normalizing nulls in column: cst_id
+2026-03-09 01:04:32,581 | INFO | Normalizing nulls in column: cst_key
+2026-03-09 01:04:32,591 | INFO | Normalizing nulls in column: cst_firstname
+2026-03-09 01:04:32,602 | INFO | Normalizing nulls in column: cst_lastname
+2026-03-09 01:04:32,611 | INFO | Normalizing nulls in column: cst_marital_status
+2026-03-09 01:04:32,619 | INFO | Normalizing nulls in column: cst_gndr
+2026-03-09 01:04:32,647 | WARNING | [NULL PRIMARY KEY REMOVED] 4 rows removed where cst_id is NULL
+2026-03-09 01:04:32,651 | INFO | [DUPLICATE FOUND] cst_id=29433 \u2192 occurrences=2
+2026-03-09 01:04:32,651 | INFO | [DUPLICATE FOUND] cst_id=29449 \u2192 occurrences=2
+2026-03-09 01:04:32,651 | INFO | [DUPLICATE FOUND] cst_id=29466 \u2192 occurrences=3
+2026-03-09 01:04:32,651 | INFO | [DUPLICATE FOUND] cst_id=29473 \u2192 occurrences=2
+2026-03-09 01:04:32,651 | INFO | [DUPLICATE FOUND] cst_id=29483 \u2192 occurrences=2
+2026-03-09 01:04:32,666 | INFO | [DEDUP] Total rows   : 18490
+2026-03-09 01:04:32,666 | INFO | [DEDUP] Kept rows    : 18484
+2026-03-09 01:04:32,666 | INFO | [DEDUP] Deleted rows : 6
+2026-03-09 01:04:32,667 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:33,311 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:33,322 | INFO | Normalizing nulls in column: prd_key
+2026-03-09 01:04:33,322 | INFO | Normalizing nulls in column: prd_name
+2026-03-09 01:04:33,322 | INFO | Normalizing nulls in column: prd_line
+2026-03-09 01:04:33,340 | INFO | No duplicates found
+2026-03-09 01:04:33,340 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:33,434 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:34,187 | INFO | Normalizing nulls in column: sales_prd_key
+2026-03-09 01:04:34,226 | INFO | Normalizing nulls in column: sales_ord_num
+2026-03-09 01:04:34,268 | INFO | Normalizing nulls in column: sales_cust_id
+2026-03-09 01:04:34,336 | INFO | Converted sales_order_date_raw to datetime. Null values after conversion: 19
+2026-03-09 01:04:34,336 | INFO | sales_order_date_raw -> 19 invalid dates converted to NaT
+2026-03-09 01:04:34,342 | INFO | Converted sales_ship_date_raw to datetime. Null values after conversion: 0
+2026-03-09 01:04:34,342 | INFO | sales_ship_date_raw -> 0 invalid dates converted to NaT
+2026-03-09 01:04:34,347 | INFO | Converted sales_due_date_raw to datetime. Null values after conversion: 0
+2026-03-09 01:04:34,347 | INFO | sales_due_date_raw -> 0 invalid dates converted to NaT
+2026-03-09 01:04:34,362 | WARNING | 15 invalid records detected.
+2026-03-09 01:04:34,362 | INFO | Valid records: 60383
+2026-03-09 01:04:34,362 | INFO | Invalid records: 15
+2026-03-09 01:04:34,377 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:36,627 | INFO | Starting ERP Customers Silver Pipeline
+2026-03-09 01:04:36,627 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:36,768 | INFO | Extracted 18484 records from bronze.
+2026-03-09 01:04:36,784 | INFO | Schema enforcement completed.
+2026-03-09 01:04:36,784 | INFO | Customer ID standardization completed.
+2026-03-09 01:04:36,800 | INFO | Value replacements applied.
+2026-03-09 01:04:36,800 | INFO | Technical columns dropped.
+2026-03-09 01:04:36,800 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:37,204 | INFO | ERP Customers Silver Pipeline completed successfully.
+2026-03-09 01:04:37,205 | INFO | Starting ERP Customer Locations Silver Pipeline
+2026-03-09 01:04:37,205 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:37,367 | INFO | Extracted 18484 records from bronze for location data.
+2026-03-09 01:04:37,368 | INFO | Schema enforcement completed for location data.
+2026-03-09 01:04:37,378 | INFO | Value replacements applied for location data.
+2026-03-09 01:04:37,379 | INFO | Technical columns dropped for location data.
+2026-03-09 01:04:37,382 | INFO | CID transformation completed for location data.
+2026-03-09 01:04:37,382 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:37,712 | INFO | ERP Customer Locations Silver Pipeline completed successfully.
+2026-03-09 01:04:37,712 | INFO | Starting ERP Product Categories Silver Pipeline
+2026-03-09 01:04:37,712 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:37,727 | INFO | Extracted 37 records from bronze.
+2026-03-09 01:04:37,728 | INFO | Technical columns dropped for category data.
+2026-03-09 01:04:37,728 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:37,785 | INFO | ERP Product Categories Silver Pipeline completed successfully.
+2026-03-09 01:04:37,785 | INFO | Silver Layer Pipeline finished: 6 succeeded, 0 failed out of 6
+2026-03-09 01:04:37,785 | INFO | ============================================================
+2026-03-09 01:04:37,785 | INFO | [START] Starting Gold Layer Pipeline
+2026-03-09 01:04:37,785 | INFO | Loading config from: d:\data_engineering_project\configs\db_config.json
+2026-03-09 01:04:37,813 | INFO | Executing: DROP VIEW IF EXISTS gold_db.dim_customers ...
+2026-03-09 01:04:37,824 | INFO |   -> OK
+2026-03-09 01:04:37,824 | INFO | Executing: CREATE VIEW gold_db.dim_customers AS SELECT     ROW_NUMBER() OVER (ORDER BY ci.c ...
+2026-03-09 01:04:37,831 | INFO |   -> OK
+2026-03-09 01:04:37,831 | INFO | Executing: DROP VIEW IF EXISTS gold_db.dim_products ...
+2026-03-09 01:04:37,836 | INFO |   -> OK
+2026-03-09 01:04:37,837 | INFO | Executing: CREATE VIEW gold_db.dim_products AS SELECT      ROW_NUMBER() OVER( ORDER BY pn.p ...
+2026-03-09 01:04:37,844 | INFO |   -> OK
+2026-03-09 01:04:37,844 | INFO | Executing: DROP VIEW IF EXISTS gold_db.fact_sales ...
+2026-03-09 01:04:37,844 | INFO |   -> OK
+2026-03-09 01:04:37,844 | INFO | Executing: CREATE VIEW gold_db.fact_sales AS SELECT      sd.sales_ord_num AS order_number,  ...
+2026-03-09 01:04:37,844 | INFO |   -> OK
+2026-03-09 01:04:37,844 | INFO | Gold Layer Pipeline finished: 6 succeeded, 0 failed out of 6
+2026-03-09 01:04:37,844 | INFO | pipeline | Pipeline complete
+```
 
 This executes in order:
 1. **Bronze pipeline** -- Loads all 6 CSV files into bronze_db
@@ -323,7 +428,9 @@ This executes in order:
 ### Inspect the data:
 
 ```bash
+# Data quality checks 
 python python/check_data.py
+
 ```
 
 This displays sample data from each bronze table and runs all data quality checks.
@@ -369,4 +476,7 @@ pytest tests/test_transformations.py -v   # Unit tests for transforms
 ## Author
 
 **Mohammad Saif**
-Aspiring Data Engineer
+Data Engineer | ELT Pipeline | Medallion
+Architecture  | Dimensional and Star Modeling
+
+[![GitHub](https://img.shields.io/badge/GitHub-MohammadSaif001-black?logo=github)](https://github.com/MohammadSaif001)
