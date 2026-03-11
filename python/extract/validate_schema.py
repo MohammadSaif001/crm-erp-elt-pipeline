@@ -209,5 +209,6 @@ def run_schema_validation_report() -> bool:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    from utils.logger import setup_logger
+    setup_logger("validate_schema")
     run_schema_validation_report()

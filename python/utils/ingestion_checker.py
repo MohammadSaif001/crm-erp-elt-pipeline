@@ -2,6 +2,8 @@ import os
 import logging
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 # Resolve project root safely (Windows/Linux independent)
 PROJECT_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..")
@@ -12,11 +14,6 @@ PROCESSED_FILE = os.path.join(
     "data",
     "processed",
     "processed_files.csv"
-)
-logging.basicConfig(
-    filename=r"D:\data_engineering_project\data\logs\pipeline.log",
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
 )
 
 def is_file_processed(source, file_name, bronze_table):
@@ -51,7 +48,7 @@ def mark_file_processed(source, file_name, bronze_table):
         [[source, file_name, bronze_table]],
         columns=["source", "file_name", "bronze_table"]
     )
-    logging.info(f"Marking file as processed: Table={bronze_table}")
+    logger.info(f"Marking file as processed: Table={bronze_table}")
     os.makedirs(os.path.dirname(PROCESSED_FILE), exist_ok=True)
 
     if os.path.exists(PROCESSED_FILE) and os.path.getsize(PROCESSED_FILE) > 0:

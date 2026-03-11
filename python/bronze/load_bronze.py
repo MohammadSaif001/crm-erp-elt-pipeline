@@ -17,7 +17,7 @@ if python_folder not in sys.path:
 
 
 from utils.db_connection import get_engine
-from utils.paths import get_raw_data_path, get_logs_path, get_project_root
+from utils.paths import get_raw_data_path, get_project_root
 
 from utils.ingestion_checker import(
     PROCESSED_FILE,
@@ -25,13 +25,6 @@ from utils.ingestion_checker import(
     mark_file_processed
 )
 
-log_file_path = get_logs_path("pipeline.log")
-
-logging.basicConfig(
-    filename=log_file_path,
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
-)
 logger = logging.getLogger(__name__)
 
 #! Bronze CSV Reader Function

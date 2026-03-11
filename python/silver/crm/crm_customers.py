@@ -14,18 +14,14 @@ if python_folder not in sys.path:
 from utils.db_connection import get_engine
 from utils.paths import get_raw_data_path
 
+logger = logging.getLogger(__name__)
+
 def extract_from_bronze(table_name: str) -> pd.DataFrame:
     engine = get_engine("bronze")
     try:
         return pd.read_sql(f"SELECT * FROM {table_name}", engine)
     except Exception as e:
         raise RuntimeError(f"Failed to extract from bronze table {table_name}") from e
-    
-logging.basicConfig(
-    filename=r"D:\data_engineering_project\data\logs\pipeline.log",
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
-)
 #! Define schema for data types
 schema_customer ={
     "cst_id"              : "string",
