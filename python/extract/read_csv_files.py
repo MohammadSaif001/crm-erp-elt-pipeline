@@ -129,7 +129,8 @@ def get_source_file_info() -> list[dict]:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    from utils.logger import setup_logger
+    setup_logger("read_csv_files")
     print("\n--- Source File Info ---")
     for f in get_source_file_info():
         icon = "✓" if f["exists"] else "✗"

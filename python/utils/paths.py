@@ -22,5 +22,8 @@ def get_raw_data_path(relative_path):
     return os.path.join(get_project_root(), "data", "raw", relative_path)
 
 def get_logs_path(relative_path):
-    """Returns absolute path to a file inside data/logs/."""
-    return os.path.join(get_project_root(), "data", "logs", relative_path)
+    """Returns absolute path to a file inside data/logs/.
+    Creates the logs directory if it does not exist."""
+    logs_dir = os.path.join(get_project_root(), "data", "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    return os.path.join(logs_dir, relative_path)
