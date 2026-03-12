@@ -11,11 +11,11 @@ except ImportError:
     from utils.paths import get_config_path, get_project_root
 
 def load_config():
-    # RELATIVE STRING NAHI, FUNCTION CALL KAREIN:
+   
     config_path = get_config_path()
     rel_config_path = os.path.relpath(config_path, get_project_root())
     
-    # Debugging ke liye print (optional)
+    
     logging.info(f"Loading config from: {rel_config_path}")
 
     with open(config_path, "r") as file:
