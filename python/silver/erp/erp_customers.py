@@ -1,18 +1,19 @@
 import os
 import sys
 import logging
-import pandas as pd 
+import pandas as pd
+from pathlib import Path
 from sqlalchemy import String, Date, DateTime
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-silver_folder = os.path.dirname(current_dir)
-python_folder = os.path.dirname(silver_folder)
+# Setup path for module imports
+_current_file = Path(__file__).resolve()
+_python_root = _current_file.parents[2]  # Navigate: erp → silver → python
 
-if python_folder not in sys.path:
-    sys.path.append(python_folder)             # .../python
+if str(_python_root) not in sys.path:
+    sys.path.insert(0, str(_python_root))             # .../python
 
 from utils.db_connection import get_engine     
-from utils.paths import get_raw_data_path 
+ 
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 
         if column not in df.columns:
             #! log warning and skip missing columns
-            logging.warning(f"[SCHEMA WARNING] Column missing: {column}")
+            logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
             df[column] = pd.to_numeric(df[column], errors="coerce")
@@ -61,13 +62,13 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 def standardize_customer_id(df: pd.DataFrame) -> pd.DataFrame:
 
     if "cid" not in df.columns:
-        logging.warning("[CID WARNING] 'cid' column not found.")
+        logger.warning("[CID WARNING] 'cid' column not found.")
         return df
     before = len(df)
     df = df.loc[df["cid"].str.len() >= 10].copy()
     dropped = before - len(df)
     if dropped > 0:
-        logging.warning(
+        logger.warning(
             f"{dropped} records dropped due to invalid CID length."
         )
     df.loc[:, "cid"] = df["cid"].astype(str).str[-10:]
@@ -109,7 +110,7 @@ def apply_value_replacements(df: pd.DataFrame,replacements: dict) -> pd.DataFram
     for column, mapping in replacements.items():
 
         if column not in df.columns:
-            logging.warning(f"[REPLACEMENT WARNING] Column '{column}' not found.")
+            logger.warning(f"[REPLACEMENT WARNING] Column '{column}' not found.")
             continue
 
         df.loc[:, column] = (
@@ -128,30 +129,30 @@ def drop_technical_columns(df: pd.DataFrame,drop_columns = "raw_row") -> pd.Data
 
 def transform_erp_cid_column(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
-        logging.warning("Input dataframe is empty. Skipping transformation.")
+        logger.warning("Input dataframe is empty. Skipping transformation.")
         return df
     df["cid"] = df["cid"].astype(str).str.replace("-", "", regex=False)
     return df
 
-def run_customer_pipeline():
-    logging.info("Starting ERP Customers Silver Pipeline")
+def run_customer_pipeline()-> None:
+    logger.info("Starting ERP Customers Silver Pipeline")
     try:
         df_customer = extract_from_bronze("erp_cust_az12")
-        logging.info(f"Extracted {len(df_customer)} records from bronze.")
+        logger.info(f"Extracted {len(df_customer)} records from bronze.")
         
         df_customer = enforce_schema(df_customer, schema_customer)
-        logging.info("Schema enforcement completed.")
+        logger.info("Schema enforcement completed.")
         
         df_customer = standardize_customer_id(df_customer)
-        logging.info("Customer ID standardization completed.")
+        logger.info("Customer ID standardization completed.")
         
         df_customer = apply_value_replacements(df_customer, customer_replacemts)
         df_customer["gender_raw"] = df_customer["gender_raw"].fillna("n/a")
-        logging.info("Value replacements applied.")
+        logger.info("Value replacements applied.")
         
         df_customer = drop_technical_columns(df_customer)
         df_customer = df_customer.drop(columns=["ingest_id"], errors="ignore")
-        logging.info("Technical columns dropped.")
+        logger.info("Technical columns dropped.")
         
         #! Save to silver layer
         df_customer["loaded_at"] = pd.Timestamp.now()
@@ -165,30 +166,32 @@ def run_customer_pipeline():
                 "birth_date_raw": Date(),
                 "gender_raw": String(50),
                 "loaded_at": DateTime()
-            },
+            }, # type: ignore
             chunksize=1000
         )
-        logging.info("ERP Customers Silver Pipeline completed successfully.")
+        logger.info("ERP Customers Silver Pipeline completed successfully.")
     except Exception as e:
-        logging.error(f"Pipeline failed: {e}", exc_info=True)
-def run_location_pipeline():
-    logging.info("Starting ERP Customer Locations Silver Pipeline")
+        logger.error(f"Pipeline failed: {e}", exc_info=True)
+
+
+def run_location_pipeline()-> None:
+    logger.info("Starting ERP Customer Locations Silver Pipeline")
     try:
         df_location = extract_from_bronze("erp_location_a101")
-        logging.info(f"Extracted {len(df_location)} records from bronze for location data.")
+        logger.info(f"Extracted {len(df_location)} records from bronze for location data.")
         
         df_location = enforce_schema(df_location, schema_location)
-        logging.info("Schema enforcement completed for location data.")
+        logger.info("Schema enforcement completed for location data.")
         
         df_location = apply_value_replacements(df_location, location_replacements)
         df_location["country_name"] = df_location["country_name"].fillna("n/a")
-        logging.info("Value replacements applied for location data.")
+        logger.info("Value replacements applied for location data.")
         
         df_location = drop_technical_columns(df_location)
-        logging.info("Technical columns dropped for location data.")
+        logger.info("Technical columns dropped for location data.")
 
         df_location = transform_erp_cid_column(df_location)
-        logging.info("CID transformation completed for location data.")
+        logger.info("CID transformation completed for location data.")
 
         #! Save to silver layer
         df_location["loaded_at"] = pd.Timestamp.now()
@@ -201,22 +204,22 @@ def run_location_pipeline():
                 "cid": String(100),
                 "country_name": String(255),
                 "loaded_at": DateTime()
-            },
+            }, # type: ignore
             chunksize=1000
         )
-        logging.info("ERP Customer Locations Silver Pipeline completed successfully.")
+        logger.info("ERP Customer Locations Silver Pipeline completed successfully.")
     except Exception as e:
-        logging.error(f"Location pipeline failed: {e}", exc_info=True)
+        logger.error(f"Location pipeline failed: {e}", exc_info=True)
 
-def run_category_pipeline():
-    logging.info("Starting ERP Product Categories Silver Pipeline")
+def run_category_pipeline()-> None:
+    logger.info("Starting ERP Product Categories Silver Pipeline")
     try:
         df_category = extract_from_bronze("erp_px_cat_g1v2")
-        logging.info(f"Extracted {len(df_category)} records from bronze.")
+        logger.info(f"Extracted {len(df_category)} records from bronze.")
         
         df_category = drop_technical_columns(df_category)
         df_category = df_category.drop(columns=["ingest_id"], errors="ignore")
-        logging.info("Technical columns dropped for category data.")
+        logger.info("Technical columns dropped for category data.")
     
         df_category["loaded_at"] = pd.Timestamp.now()
         df_category.to_sql(
@@ -230,12 +233,12 @@ def run_category_pipeline():
                 "subcat": String(100),
                 "maintenance_raw": String(100),
                 "loaded_at": DateTime()
-            },
+            }, # type: ignore
             chunksize=1000
         )
-        logging.info("ERP Product Categories Silver Pipeline completed successfully.")
+        logger.info("ERP Product Categories Silver Pipeline completed successfully.")
     except Exception as e:  
-        logging.error(f"Category pipeline failed: {e}", exc_info=True)
+        logger.error(f"Category pipeline failed: {e}", exc_info=True)
 
 if __name__ == "__main__":
     run_customer_pipeline()

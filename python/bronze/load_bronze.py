@@ -56,7 +56,7 @@ def add_raw_row(df: pd.DataFrame) -> pd.DataFrame:
 
 
 #! Database Connection Function
-def data_base_connection():
+def data_base_connection() -> None | Any:
     try:
         engine = get_engine("bronze")
         logger.info("Database connected successfully for bronze layer.")
@@ -66,7 +66,7 @@ def data_base_connection():
         return None  
     
 #! 1.Customer Load Function
-def load_cust_info():
+def load_cust_info() -> None:
     
     start_time = time.time()
     source = "source_crm"
@@ -89,7 +89,7 @@ def load_cust_info():
         os.path.join("source_crm", "cust_info.csv")
     )
 
-        df = read_bronze_csv(csv_path)
+        df = read_bronze_csv(str(csv_path))
         
         # 2. Add raw_row (wrapped)
         df = add_raw_row(df)
@@ -153,7 +153,7 @@ def load_cust_info():
         logging.warning(f"Processing Error: {e}")
 
 #! 2. Sales Load Function
-def load_sales_details_info():
+def load_sales_details_info() -> None:
     start_time = time.time()
     source = "source_crm"
     file_name = "sales_details.csv"
@@ -179,7 +179,7 @@ def load_sales_details_info():
         os.path.join("source_crm", "sales_details.csv")
     )
         #! 1. Read CSV (wrapped)
-        df = read_bronze_csv(csv_path)
+        df = read_bronze_csv(str(csv_path))
 
         #! 2. Add raw_row (wrapped)
         df = add_raw_row(df)
@@ -242,7 +242,7 @@ def load_sales_details_info():
         logging.warning(f"Processing Error: {e}")
 
 #! 3.Product Load Function
-def load_prd_info():
+def load_prd_info() -> None:
     start_time = time.time()
     source = "source_crm"
     file_name = "prd_info.csv"
@@ -267,7 +267,7 @@ def load_prd_info():
         csv_path = get_raw_data_path(
         os.path.join("source_crm", "prd_info.csv")
     )
-        df = read_bronze_csv(csv_path)
+        df = read_bronze_csv(str(csv_path))
         #! 2. Add raw_row
         df = add_raw_row(df)
         df['prd_id']    = df.get('prd_id')
@@ -322,7 +322,7 @@ def load_prd_info():
         logging.error(f"[ERROR] Processing Error: {e}")
 
 #! ERP Load Functions
-def load_erp_cust_az12():
+def load_erp_cust_az12() -> None:
     start_time = time.time()
     source = "source_erp"
     file_name = "CUST_AZ12.csv"
@@ -344,7 +344,7 @@ def load_erp_cust_az12():
         csv_path = get_raw_data_path(os.path.join
                 ("source_erp", "CUST_AZ12.csv"))
         #! 1. Read  CSV
-        df = read_bronze_csv(csv_path)
+        df = read_bronze_csv(str(csv_path))
         #! 2. Add raw_row
         df = add_raw_row(df)
 
@@ -392,7 +392,7 @@ def load_erp_cust_az12():
         )
         logging.warning(f"Processing Error: {e}")
 
-def load_erp_location_a101():
+def load_erp_location_a101() -> None:
     start_time = time.time()
     source = "source_erp"
     file_name = "LOC_A101.csv"
@@ -416,7 +416,7 @@ def load_erp_location_a101():
         csv_path = get_raw_data_path(os.path.join
                 ("source_erp", "LOC_A101.csv"))
         #! 1. Read  CSV
-        df = read_bronze_csv(csv_path)
+        df = read_bronze_csv(str(csv_path))
         #! 2. Add raw_row
         df = add_raw_row(df)
 
@@ -460,7 +460,7 @@ def load_erp_location_a101():
             f"[ERROR] Loading table: {table_name} | Error: {e}"
         )
 
-def load_erp_px_cat_g1v2():
+def load_erp_px_cat_g1v2() -> None:
     start_time = time.time()
     source = "source_erp"
     file_name = "PX_CAT_G1V2.csv"
@@ -483,7 +483,7 @@ def load_erp_px_cat_g1v2():
         csv_path = get_raw_data_path(os.path.join
                 ("source_erp", "PX_CAT_G1V2.csv"))
         #! 1. Read  CSV
-        df = read_bronze_csv(csv_path)
+        df = read_bronze_csv(str(csv_path))
         #! 2. Add raw_row
         df = add_raw_row(df)
 
@@ -534,7 +534,7 @@ def load_erp_px_cat_g1v2():
         logging.warning(f"Processing Error: {e}")
 
 #! Orchestration Function
-def run_bronze_pipeline():
+def run_bronze_pipeline() -> None:
     """
     Orchestrates complete Bronze layer ingestion.
     Entry point for local runs, schedulers, and future Airflow DAGs.

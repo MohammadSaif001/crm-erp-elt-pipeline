@@ -1,7 +1,7 @@
-import pandas as pd
 import sys
 import os
-import logging
+import pandas as pd
+from pathlib import Path
 from sqlalchemy import text
 from dq_checks.check_nulls import check_nulls, run_null_checks
 from dq_checks.check_row_counts import get_row_counts, run_row_count_report
@@ -9,13 +9,13 @@ from dq_checks.check_duplicates import check_duplicates, run_duplicate_checks
 from dq_checks.check_fk_integrity import check_fk_integrity, run_fk_integrity_report
 
 # Path setup
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
+current_dir = Path(__file__).resolve().parent
+if str(current_dir) not in sys.path:
+    sys.path.append(str(current_dir))
 
 from utils.db_connection import get_engine
 
-def check_data_slim():
+def check_data_slim()-> None:
     # Pandas settings for clean output
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', 1000)

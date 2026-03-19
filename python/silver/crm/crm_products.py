@@ -1,18 +1,19 @@
-import os
 import sys
 import logging
 import pandas as pd
+from pathlib import Path
 from sqlalchemy import Date, String, Numeric, DateTime
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-silver_folder = os.path.dirname(current_dir)
-python_folder = os.path.dirname(silver_folder)
+# Setup path for module imports
+_current_file = Path(__file__).resolve()
+_python_root = _current_file.parents[2]  # Navigate: crm → silver → python
 
-if python_folder not in sys.path:
-    sys.path.append(python_folder) 
+if str(_python_root) not in sys.path:
+    sys.path.insert(0, str(_python_root))
 
 from utils.db_connection import get_engine
-from utils.paths import get_raw_data_path
+
+logger = logging.getLogger(__name__)
 
 def extract_from_bronze(table_name: str) -> pd.DataFrame:
     engine = get_engine("bronze")
@@ -36,7 +37,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 
         if column not in df.columns:
             #! log warning and skip missing columns
-            logging.warning(f"[SCHEMA WARNING] Column missing: {column}")
+            logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
             df[column] = pd.to_numeric(df[column], errors="coerce")
@@ -57,7 +58,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     str_cols = df.select_dtypes(include="string").columns
     for col in str_cols:
-        logging.info(f"Normalizing nulls in column: {col}")
+        logger.info(f"Normalizing nulls in column: {col}")
         df[col] = (
             df[col]
             .str.strip()
@@ -100,7 +101,7 @@ def transform_crm_products(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 #! data quality checks function to identify duplicates
-def data_quality_checks(df: pd.DataFrame):  
+def data_quality_checks(df: pd.DataFrame)-> None:
     PRIMARY_KEY = ["prd_id"]
     dup_mask = df.duplicated(subset=PRIMARY_KEY, keep=False)
     dup_rows = df[dup_mask]
@@ -112,15 +113,15 @@ def data_quality_checks(df: pd.DataFrame):
         .reset_index(name="occurrences")
         )
         for _, row in dup_summary.iterrows():
-            logging.warning(
+            logger.warning(
                 f"[DUPLICATE FOUND] {PRIMARY_KEY[0]}={row['prd_id']} "
                 f"→ occurrences={row['occurrences']}"
             )
     else:
-        logging.info("No duplicates found")
+        logger.info("No duplicates found")
     
 
-def run_products_pipeline(table_name: str):
+def run_products_pipeline(table_name: str) -> None:
     df_products = extract_from_bronze(table_name)
     df_products = enforce_schema(df_products, schema_products)
     df_products = normalize_data(df_products)
@@ -149,7 +150,7 @@ def run_products_pipeline(table_name: str):
             "prd_start_dt"        : Date(),
             "prd_end_dt"          : Date(),
             "loaded_at"           : DateTime()
-         },
+         }, # type: ignore
          chunksize=1000
          )
     

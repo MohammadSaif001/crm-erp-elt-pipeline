@@ -1,18 +1,18 @@
-import os
 import sys
 import logging
 import pandas as pd
+from pathlib import Path
 from sqlalchemy import String, Date, DateTime
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-silver_folder = os.path.dirname(current_dir)
-python_folder = os.path.dirname(silver_folder)
+# Setup path for module imports
+_current_file = Path(__file__).resolve()
+_python_root = _current_file.parents[2]  # Navigate: crm → silver → python
 
-if python_folder not in sys.path:
-    sys.path.append(python_folder)             # .../python
+if str(_python_root) not in sys.path:
+    sys.path.insert(0, str(_python_root))
 
 from utils.db_connection import get_engine
-from utils.paths import get_raw_data_path
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ schema_customer ={
 def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     str_cols = df.select_dtypes(include="string").columns
     for col in str_cols:
-        logging.info(f"Normalizing nulls in column: {col}")
+        logger.info(f"Normalizing nulls in column: {col}")
         df[col] = (
             df[col]
             .str.strip()
@@ -56,7 +56,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 
         if column not in df.columns:
             #! log warning and skip missing columns
-            logging.warning(f"[SCHEMA WARNING] Column missing: {column}")
+            logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
             df[column] = pd.to_numeric(df[column], errors="coerce")
@@ -74,7 +74,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 
     return df
 
-def data_quality_checks(df: pd.DataFrame):  
+def data_quality_checks(df: pd.DataFrame)-> None:  
     PRIMARY_KEY = ["cst_id"]
     dup_mask = df.duplicated(subset=PRIMARY_KEY, keep=False)
     dup_rows = df[dup_mask]
@@ -86,12 +86,12 @@ def data_quality_checks(df: pd.DataFrame):
         .reset_index(name="occurrences")
         )
         for _, row in dup_summary.iterrows():
-            logging.info(
+            logger.info(
                 f"[DUPLICATE FOUND] {PRIMARY_KEY[0]}={row['cst_id']} "
                 f"→ occurrences={row['occurrences']}"
             )
     else:
-        logging.info("No duplicates found")
+        logger.info("No duplicates found")
     
 
 def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -130,7 +130,7 @@ def deduplicate_latest_by_date(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     if df.empty:
-        logging.info("[DEDUP] Empty DataFrame.")
+        logger.info("[DEDUP] Empty DataFrame.")
         return df, pd.DataFrame()
 
     df = df.copy()
@@ -143,9 +143,9 @@ def deduplicate_latest_by_date(
     #! Identify deleted rows based on index difference
     deleted_rows = df_sorted[~df_sorted.index.isin(kept_rows.index)]
 	#! logging into log file for debugging and monitoring how many duplicates were found and removed
-    logging.info(f"[DEDUP] Total rows   : {len(df)}")
-    logging.info(f"[DEDUP] Kept rows    : {len(kept_rows)}")
-    logging.info(f"[DEDUP] Deleted rows : {len(deleted_rows)}")
+    logger.info(f"[DEDUP] Total rows   : {len(df)}")
+    logger.info(f"[DEDUP] Kept rows    : {len(kept_rows)}")
+    logger.info(f"[DEDUP] Deleted rows : {len(deleted_rows)}")
     return kept_rows, deleted_rows
 #! delete null values in the dataframe and log how many rows were deleted form PRIMARY_KEY column
 def remove_null_primary_keys(df: pd.DataFrame, primary_key: str) -> pd.DataFrame:
@@ -156,13 +156,13 @@ def remove_null_primary_keys(df: pd.DataFrame, primary_key: str) -> pd.DataFrame
     removed_count = initial_count - len(df_clean)
 
     if removed_count > 0:
-        logging.warning(
+        logger.warning(
             f"[NULL PRIMARY KEY REMOVED] {removed_count} rows removed where {primary_key} is NULL"
         )
 
     return df_clean
 
-def run_customers_pipeline(table_name: str):
+def run_customers_pipeline(table_name: str)-> None:
     df_customers = extract_from_bronze(table_name)
     df_customers = enforce_schema(df_customers, schema_customer) # object → string, datetime → datetime64, etc.
     df_customers = normalize_data(df_customers)           
@@ -196,7 +196,7 @@ def run_customers_pipeline(table_name: str):
             "cst_gender"          : String(50),
             "cst_create_date"     : Date(),
             "loaded_at"           : DateTime()
-         },
+         }, # type: ignore
          chunksize=1000
          )
 
