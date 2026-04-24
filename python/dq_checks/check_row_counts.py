@@ -45,7 +45,7 @@ def get_row_counts(layer: str) -> dict:
                 result = pd.read_sql(query, conn)
                 counts[table] = int(result["cnt"].iloc[0])
         except Exception as e:
-            logging.error(f"[ROW_COUNT] Error reading {layer}.{table}: {e}")
+            logger.error(f"[ROW_COUNT] Error reading {layer}.{table}: {e}")
             counts[table] = -1  # signals error
 
     return counts
@@ -67,7 +67,7 @@ def check_row_counts() -> dict:
                 status = "ERROR"
             elif count == 0:
                 status = "WARN"
-                logging.warning(f"[ROW_COUNT] {layer}.{table} is empty!")
+                logger.warning(f"[ROW_COUNT] {layer}.{table} is empty!")
             else:
                 status = "OK"
             layer_report[table] = {"count": count, "status": status}

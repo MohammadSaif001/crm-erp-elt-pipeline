@@ -21,7 +21,7 @@ if str(python_folder) not in sys.path:
 from utils.paths import get_raw_data_path
 from utils.config_loader import load_pipeline_config
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__.split(".")[-1])
 
 
 def read_source_file(source_folder: str, file_name: str) -> pd.DataFrame:

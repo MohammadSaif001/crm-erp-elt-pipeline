@@ -44,7 +44,7 @@ def check_nulls(layer: str = "silver") -> dict:
     """
     rules = NOT_NULL_RULES.get(layer, {})
     if not rules:
-        logging.warning(f"No null-check rules configured for layer: {layer}")
+        logger.warning(f"No null-check rules configured for layer: {layer}")
         return {}
 
     engine = get_engine(layer)
@@ -65,11 +65,11 @@ def check_nulls(layer: str = "silver") -> dict:
                         "status": status,
                     })
                     if status == "FAIL":
-                        logging.warning(
+                        logger.warning(
                             f"[NULLS] {layer}.{table}.{col} has {null_count} NULL values"
                         )
         except Exception as e:
-            logging.error(f"[NULLS] Error checking {layer}.{table}: {e}")
+            logger.error(f"[NULLS] Error checking {layer}.{table}: {e}")
             table_results.append({"column": "*", "status": "ERROR", "error": str(e)})
 
         results[table] = table_results

@@ -6,8 +6,6 @@ and executes them against the MySQL gold database.
 """
 import os
 import sys
-import logging
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 python_folder = os.path.dirname(current_dir)
 
@@ -40,8 +38,8 @@ def _split_statements(sql_text: str) -> list[str]:
 
 def run_gold_pipeline() -> None:
     """Execute all gold-layer SQL views."""
-    logging.info("=" * 60)
-    logging.info("[START] Starting Gold Layer Pipeline")
+    logger.info("=" * 60)
+    logger.info("[START] Starting Gold Layer Pipeline")
 
     engine = get_engine("gold")
     sql_text = _read_sql_file("create_dim_customers.sql")
@@ -54,16 +52,16 @@ def run_gold_pipeline() -> None:
             # Identify what we're running for logging purposes
             short = stmt[:80].replace("\n", " ")
             try:
-                logging.info(f"Executing: {short} ...")
+                logger.info(f"Executing: {short} ...")
                 conn.execute(text(stmt))
                 conn.commit()
                 succeeded += 1
-                logging.info("  -> OK")
+                logger.info("  -> OK")
             except Exception as e:
                 failed += 1
-                logging.error(f"  -> FAILED: {e}")
+                logger.error(f"  -> FAILED: {e}")
 
-    logging.info(
+    logger.info(
         f"Gold Layer Pipeline finished: "
         f"{succeeded} succeeded, {failed} failed out of {len(statements)}"
     )

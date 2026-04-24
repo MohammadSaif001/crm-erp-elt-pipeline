@@ -107,14 +107,14 @@ def check_fk_integrity() -> list[dict]:
                 })
 
                 if status == "FAIL":
-                    logging.warning(
+                    logger.warning(
                         f"[FK] {rule['name']}: {orphan_count} orphan rows "
                         f"({child}.{child_col} not in {parent}.{parent_col})"
                     )
                 else:
-                    logging.info(f"[FK] {rule['name']} — PASS")
+                    logger.info(f"[FK] {rule['name']} — PASS")
         except Exception as e:
-            logging.error(f"[FK] Error on rule '{rule['name']}': {e}")
+            logger.error(f"[FK] Error on rule '{rule['name']}': {e}")
             results.append({
                 "rule": rule["name"],
                 "layer": layer,

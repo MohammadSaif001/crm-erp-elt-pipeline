@@ -47,7 +47,7 @@ def check_duplicates(layer: str = "silver") -> dict:
     """
     tables = TABLE_KEYS.get(layer, {})
     if not tables:
-        logging.warning(f"No tables configured for layer: {layer}")
+        logger.warning(f"No tables configured for layer: {layer}")
         return {}
 
     engine = get_engine(layer)
@@ -79,13 +79,13 @@ def check_duplicates(layer: str = "silver") -> dict:
                 }
 
                 if status == "FAIL":
-                    logging.warning(
+                    logger.warning(
                         f"[DUPLICATES] {layer}.{table} has {dup_count} duplicate rows on {keys}"
                     )
                 else:
-                    logging.info(f"[DUPLICATES] {layer}.{table} — PASS (no duplicates)")
+                    logger.info(f"[DUPLICATES] {layer}.{table} — PASS (no duplicates)")
         except Exception as e:
-            logging.error(f"[DUPLICATES] Error checking {layer}.{table}: {e}")
+            logger.error(f"[DUPLICATES] Error checking {layer}.{table}: {e}")
             results[table] = {"status": "ERROR", "error": str(e)}
 
     return results

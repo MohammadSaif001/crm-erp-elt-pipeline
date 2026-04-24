@@ -9,7 +9,6 @@ Usage:
 """
 import os
 import sys
-import logging
 import pandas as pd
 from pathlib import Path 
 
@@ -19,8 +18,9 @@ if str(python_folder) not in sys.path:
     sys.path.append(str(python_folder))
 
 from extract.read_csv_files import read_source_file
+from utils.logger import setup_logger
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__.split(".")[-1])
 
 # Expected columns per source table (after header normalization: stripped + lowered).
 # These match what the bronze layer expects.

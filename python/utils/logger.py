@@ -18,11 +18,12 @@ def setup_logger(name: str = "data_pipeline", level: int = logging.INFO) -> logg
     logger.setLevel(level)
     formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
 
-    file_handler = logging.FileHandler(log_path)
+    file_handler = logging.FileHandler(log_path, encoding='utf-8')
     file_handler.setFormatter(formatter)
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(level)
 
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)

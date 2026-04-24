@@ -21,8 +21,8 @@ logger = setup_logger("silver_pipeline")
 
 
 def run_silver_pipeline() -> None:
-    logging.info("=" * 60)
-    logging.info(f"[START] Starting Silver Layer Pipeline")
+    logger.info("=" * 60)
+    logger.info(f"[START] Starting Silver Layer Pipeline")
 
     pipelines = [
         ("CRM Customers",  lambda: run_customers_pipeline("crm_customers_info")),
@@ -41,9 +41,9 @@ def run_silver_pipeline() -> None:
             succeeded += 1
         except Exception as e:
             failed += 1
-            logging.error(f"[ORCHESTRATOR] {name} pipeline failed: {e}")
+            logger.error(f"[ORCHESTRATOR] {name} pipeline failed: {e}")
 
-    logging.info(
+    logger.info(
         f"Silver Layer Pipeline finished: "
         f"{succeeded} succeeded, {failed} failed out of {len(pipelines)}"
     )

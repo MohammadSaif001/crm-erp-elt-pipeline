@@ -1,10 +1,10 @@
 import os
 import json
-import logging
 import pandas as pd
 import numpy as np
+from utils.logger import setup_logger
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__.split(".")[-1])
 
 def read_bronze_csv(csv_path: str) -> pd.DataFrame:
     """

@@ -1,7 +1,7 @@
 import sys
-import logging
 import pandas as pd
 from pathlib import Path
+from utils.logger import setup_logger
 from sqlalchemy import String, Integer, Numeric, DateTime, Date
 
 # Setup path for module imports
@@ -13,7 +13,7 @@ if str(_python_root) not in sys.path:
 
 from utils.db_connection import get_engine
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__.split(".")[-1])
 
 def extract_from_bronze(table_name: str) -> pd.DataFrame:
     engine = get_engine("bronze")

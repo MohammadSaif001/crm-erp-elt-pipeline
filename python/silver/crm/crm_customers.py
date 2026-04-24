@@ -1,5 +1,4 @@
 import sys
-import logging
 import pandas as pd
 from pathlib import Path
 from sqlalchemy import String, Date, DateTime
@@ -12,9 +11,9 @@ if str(_python_root) not in sys.path:
     sys.path.insert(0, str(_python_root))
 
 from utils.db_connection import get_engine
+from utils.logger import setup_logger
 
-
-logger = logging.getLogger(__name__)
+logger = setup_logger("crm_customers")
 
 def extract_from_bronze(table_name: str) -> pd.DataFrame:
     engine = get_engine("bronze")
