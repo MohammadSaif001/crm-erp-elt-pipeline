@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS bronze_db;
 USE bronze_db;
 
 CREATE TABLE IF NOT EXISTS crm_customers_info (

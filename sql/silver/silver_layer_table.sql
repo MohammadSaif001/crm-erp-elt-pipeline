@@ -1,4 +1,3 @@
-SHOW databases;
 CREATE DATABASE IF NOT EXISTS silver_db;
 USE silver_db;
 

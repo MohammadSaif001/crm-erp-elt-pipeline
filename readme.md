@@ -160,19 +160,19 @@ The pipeline ingests 6 CSV files from two source systems:
 
 ### CRM (Customer Relationship Management)
 
-| File               | Description               | Key Columns                                    |
-|--------------------|---------------------------|------------------------------------------------|
-| cust_info.csv      | Customer profiles         | cst_id, cst_key, name, gender, marital_status  |
-| prd_info.csv       | Product catalog           | prd_id, prd_key, prd_name, cost, product_line  |
-| sales_details.csv  | Sales transactions        | order_num, prd_key, cust_id, dates, amounts    |
+| File               | Description               | Key Columns                                                                                                      |
+|--------------------|---------------------------|------------------------------------------------------------------------------------------------------------------|
+| cust_info.csv      | Customer profiles         | cst_id, cst_key, cst_firstname, cst_lastname, cst_marital_status, cst_gndr, cst_create_date                      |
+| prd_info.csv       | Product catalog           | prd_id, prd_key, prd_nm, prd_cost, prd_line, prd_start_dt, prd_end_dt  |
+| sales_details.csv  | Sales transactions        | sls_ord_num, sls_prd_key, sls_cust_id, sls_order_dt, sls_ship_dt, sls_due_dt, sls_sales, sls_quantity, sls_price |
 
 ### ERP (Enterprise Resource Planning)
 
 | File               | Description               | Key Columns                                    |
 |--------------------|---------------------------|------------------------------------------------|
-| CUST_AZ12.csv      | Customer supplemental     | cid, bdate, gen                                |
-| LOC_A101.csv       | Customer geography        | cid, cntry                                     |
-| PX_CAT_G1V2.csv    | Product categories        | id, cat, subcat, maintenance                   |
+| CUST_AZ12.csv      | Customer supplemental     | CID, BDATE, GEN                                |
+| LOC_A101.csv       | Customer geography        | CID, CNTRY                                     |
+| PX_CAT_G1V2.csv    | Product categories        | ID, CAT, SUBCAT, MAINTENANCE                   |
 
 ---
 
@@ -201,7 +201,7 @@ Each source gets a dedicated transformation module:
 
 **CRM Products** (`crm_products.py`):
 - Schema enforcement (int, float, string, datetime)
-- Product line mapping (R -> Road, M -> Mountain, T -> Touring, S -> Other)
+- Product line mapping (R -> Road, M -> Mountain, T -> Touring, S -> Other sales)
 - Category ID extraction from product key
 - End date calculation using window function (LEAD equivalent)
 
@@ -240,12 +240,12 @@ Creates three SQL views that join silver tables into a dimensional model:
 
 The pipeline includes four data quality check modules:
 
-| Check              | Module                | What It Validates                              |
-|--------------------|-----------------------|------------------------------------------------|
-| Null checks        | check_nulls.py        | Critical columns are NOT NULL                  |
-| Duplicate checks   | check_duplicates.py   | Primary key uniqueness per table               |
-| Row count checks   | check_row_counts.py   | Tables are non-empty; silver <= bronze counts   |
-| FK integrity       | check_fk_integrity.py | Referential integrity between related tables   |
+| Check              | Module                | What It Validates                                       |
+|--------------------|-----------------------|---------------------------------------------------------|
+| Null checks        | check_nulls.py        | Critical columns are NOT NULL                           |
+| Duplicate checks   | check_duplicates.py   | Primary key uniqueness per table                        |
+| Row count checks   | check_row_counts.py   | Tables are non-empty; bronze/silver counts are compared |
+| FK integrity       | check_fk_integrity.py | Referential integrity between related tables            |
 
 FK integrity rules validated:
 - `sales.sales_cust_id` -> `customers.cst_id`
@@ -259,9 +259,8 @@ FK integrity rules validated:
 ## Prerequisites
 
 - Python 3.10 or higher
-- MySQL Server running on localhost:3306
-- Three MySQL databases created: `bronze_db`, `silver_db`, `gold_db`
-- Tables and views created using the SQL scripts in `sql/`
+- MySQL Server running on localhost:3306 (user with CREATE DATABASE privileges)
+- Databases automatically created on first pipeline run (no manual setup needed!)
 
 ---
 
@@ -280,7 +279,7 @@ FK integrity rules validated:
 
 3. **Configure the database connection:**
 
-   Create `configs/db_config.json`:
+   Create `configs/db_config.json` with your MySQL credentials:
    ```json
    {
      "mysql": {
@@ -295,16 +294,12 @@ FK integrity rules validated:
    }
    ```
 
-4. **Create the MySQL databases and tables:**
-   ```sql
-   CREATE DATABASE IF NOT EXISTS bronze_db;
-   CREATE DATABASE IF NOT EXISTS silver_db;
-   CREATE DATABASE IF NOT EXISTS gold_db;
-   ```
-   Then run the DDL scripts:
-   - `sql/bronze/create_bronze_table.sql`
-   - `sql/silver/silver_layer_table.sql`
-   - `sql/gold/create_dim_customers.sql` (run after silver is populated)
+4. **That's it!** The pipeline will automatically:
+   - Create all three databases (`bronze_db`, `silver_db`, `gold_db`)
+   - Create all tables and views from SQL scripts
+   - Initialize the data pipeline
+
+   **No manual SQL execution needed!**
 
 ---
 

@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS gold_db;
+USE gold_db;
+
 DROP VIEW IF EXISTS gold_db.dim_customers;
 
 CREATE VIEW gold_db.dim_customers AS
