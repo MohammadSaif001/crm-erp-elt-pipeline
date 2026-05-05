@@ -20,6 +20,7 @@ if str(python_folder) not in sys.path:
 
 from utils.paths import get_raw_data_path
 from utils.config_loader import load_pipeline_config
+from utils.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
 

@@ -18,7 +18,8 @@ __pycache__/
 *.pyc
 
 # VS Code
-.vscode/.json
+vscode/settings.json
+vscode/launch.json
 
 # OS files
 .DS_Store

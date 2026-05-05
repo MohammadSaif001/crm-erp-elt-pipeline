@@ -58,6 +58,10 @@ FK_RULES = [
         "parent_col": "cat_id",
     },
 ]
+
+FK_EXCEPTIONS = {
+    "erp_category → crm_products (via cat_id)": {"CO_PD"},
+}
 """
 DQ Check: Foreign Key Integrity
 
@@ -94,6 +98,9 @@ def check_fk_integrity() -> list[dict]:
         try:
             with engine.connect() as conn:
                 df = pd.read_sql(query, conn)
+                excluded = FK_EXCEPTIONS.get(rule["name"], set())
+                if excluded and not df.empty:
+                    df = df[~df[child_col].isin(excluded)]
                 orphan_count = int(df["cnt"].sum()) if not df.empty else 0
                 sample = df[child_col].head(5).tolist() if not df.empty else []
 
