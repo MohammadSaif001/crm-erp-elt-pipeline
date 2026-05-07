@@ -4,11 +4,8 @@ import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from urllib.parse import quote_plus
+from src.core.paths import get_config_path, get_project_root
 
-try:
-    from .paths import get_config_path, get_project_root
-except ImportError:
-    from utils.paths import get_config_path, get_project_root
 
 logger = logging.getLogger(__name__)
 

@@ -1,16 +1,8 @@
-import sys
-import os
 import pytest
-
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-python_dir = os.path.join(project_root, "python")
-if python_dir not in sys.path:
-    sys.path.insert(0, python_dir)
-
-from dq_checks.check_duplicates import check_duplicates
-from dq_checks.check_nulls import check_nulls
-from dq_checks.check_row_counts import get_row_counts, compare_layers
-from dq_checks.check_fk_integrity import check_fk_integrity
+from src.database_checks.check_duplicates import check_duplicates
+from src.database_checks.check_nulls import check_nulls
+from src.database_checks.check_row_counts import get_row_counts, compare_layers
+from src.database_checks.check_fk_integrity import check_fk_integrity
 
 
 class TestDuplicates:

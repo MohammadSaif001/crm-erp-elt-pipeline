@@ -9,18 +9,20 @@ Usage:
 """
 import os
 import sys
-import logging
 import pandas as pd
 from pathlib import Path
 
-current_dir = Path(__file__).resolve().parent
-python_folder = current_dir.parent
-if str(python_folder) not in sys.path:
-    sys.path.append(str(python_folder))
+# current_dir = Path(__file__).resolve().parent
+# python_folder = current_dir.parent
+# if str(python_folder) not in sys.path:
+#     sys.path.append(str(python_folder))
 
-from utils.paths import get_raw_data_path
-from utils.config_loader import load_pipeline_config
-from utils.logger import setup_logger
+# # from utils.paths import get_raw_data_path
+# from utils.config_loader import load_pipeline_config
+# # from utils.logger import setup_logger
+from src.core.config import load_pipeline_config
+from src.core.logger import setup_logger
+from src.core.paths import get_raw_data_path
 
 logger = setup_logger(__name__.split(".")[-1])
 
@@ -131,7 +133,7 @@ def get_source_file_info() -> list[dict]:
 
 
 if __name__ == "__main__":
-    from utils.logger import setup_logger
+    from src.core.logger import setup_logger
     setup_logger("read_csv_files")
     print("\n--- Source File Info ---")
     for f in get_source_file_info():

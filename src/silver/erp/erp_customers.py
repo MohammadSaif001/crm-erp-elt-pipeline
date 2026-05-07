@@ -1,18 +1,18 @@
 import os
 import sys
 import pandas as pd
-from pathlib import Path
-from utils.logger import setup_logger
+from src.core.database import get_engine
+from src.core.logger import setup_logger
 from sqlalchemy import String, Date, DateTime
 
-# Setup path for module imports
-_current_file = Path(__file__).resolve()
-_python_root = _current_file.parents[2]  # Navigate: erp → silver → python
+# # Setup path for module imports
+# _current_file = Path(__file__).resolve()
+# _python_root = _current_file.parents[2]  # Navigate: erp → silver → python
 
-if str(_python_root) not in sys.path:
-    sys.path.insert(0, str(_python_root))             # .../python
+# if str(_python_root) not in sys.path:
+#     sys.path.insert(0, str(_python_root))             # .../python
 
-from utils.db_connection import get_engine     
+# from utils.db_connection import get_engine     
  
 
 logger = setup_logger(__name__.split(".")[-1])

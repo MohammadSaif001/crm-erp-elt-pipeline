@@ -7,18 +7,19 @@ Catches schema drift (missing/extra columns, wrong formats) early.
 Usage:
     from extract.validate_schema import validate_all_schemas, validate_schema
 """
-import os
-import sys
 import pandas as pd
-from pathlib import Path 
+from src.extract.read_csv_files import read_source_file
+from src.core.logger import setup_logger
 
-current_dir = Path(__file__).resolve().parent
-python_folder = current_dir.parent
-if str(python_folder) not in sys.path:
-    sys.path.append(str(python_folder))
+# current_dir = Path(__file__).resolve().parent
+# python_folder = current_dir.parent
+# if str(python_folder) not in sys.path:
+#     sys.path.append(str(python_folder))
 
-from extract.read_csv_files import read_source_file
-from utils.logger import setup_logger
+# from extract.read_csv_files import read_source_file
+# from utils.logger import setup_logger
+from src.extract.read_csv_files import read_source_file
+from src.core.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
 
@@ -210,6 +211,6 @@ def run_schema_validation_report() -> bool:
 
 
 if __name__ == "__main__":
-    from utils.logger import setup_logger
+    from src.core.logger import setup_logger
     setup_logger("validate_schema")
     run_schema_validation_report()

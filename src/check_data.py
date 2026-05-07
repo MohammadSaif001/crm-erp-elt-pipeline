@@ -1,19 +1,12 @@
-import sys
-import os
 import pandas as pd
-from pathlib import Path
 from sqlalchemy import text
-from dq_checks.check_nulls import check_nulls, run_null_checks
-from dq_checks.check_row_counts import get_row_counts, run_row_count_report
-from dq_checks.check_duplicates import check_duplicates, run_duplicate_checks
-from dq_checks.check_fk_integrity import check_fk_integrity, run_fk_integrity_report
+from src.core.database import get_engine
+from src.database_checks.check_nulls import run_null_checks
+from src.database_checks.check_row_counts import run_row_count_report
+from src.database_checks.check_duplicates import run_duplicate_checks
+from src.database_checks.check_fk_integrity import run_fk_integrity_report
 
-# Path setup
-current_dir = Path(__file__).resolve().parent
-if str(current_dir) not in sys.path:
-    sys.path.append(str(current_dir))
 
-from utils.db_connection import get_engine
 
 def check_data_slim()-> None:
     # Pandas settings for clean output

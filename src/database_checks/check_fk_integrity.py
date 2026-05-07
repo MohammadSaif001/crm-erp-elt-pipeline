@@ -1,16 +1,7 @@
-
-import logging
 import pandas as pd
 from sqlalchemy import text
-
-import sys, os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-python_folder = os.path.dirname(current_dir)
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
-
-from utils.db_connection import get_engine
-from utils.logger import setup_logger
+from src.core.database import get_engine
+from src.core.logger import setup_logger
 
 logger = setup_logger("dq_check_fk_integrity")
 

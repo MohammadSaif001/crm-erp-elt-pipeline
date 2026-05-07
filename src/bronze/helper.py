@@ -2,7 +2,7 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from utils.logger import setup_logger
+from src.core.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
 

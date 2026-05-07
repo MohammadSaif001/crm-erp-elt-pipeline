@@ -4,26 +4,21 @@ import time
 import pandas as pd
 import json
 import numpy as np
+
 from sqlalchemy import types
 from typing import Any, cast
 from sqlalchemy.dialects.mysql import JSON as MYSQL_JSON
 
-current_dir = os.path.dirname(os.path.abspath(__file__)) # .../python/bronze
-python_folder = os.path.dirname(current_dir)             # .../python
-
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
+from src.core.logger import setup_logger
+from src.core.database import get_engine
+from src.core.paths import get_raw_data_path, get_project_root
 
 
-from utils.db_connection import get_engine
-from utils.paths import get_raw_data_path, get_project_root
-from utils.logger import setup_logger
 
-from utils.ingestion_checker import(
+from src.bronze.ingestion_checker import(
     PROCESSED_FILE,
     is_file_processed,
-    mark_file_processed
-)
+    mark_file_processed)
 
 logger = setup_logger("bronze")
 

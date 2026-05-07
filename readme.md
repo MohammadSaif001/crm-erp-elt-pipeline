@@ -100,36 +100,45 @@ data_engineering_project/
 |   |-- processed/
 |       |-- processed_files.csv   # Idempotency tracking ledger
 |
-|-- python/
+|-- src/
+|   |-- __init__.py
 |   |-- pipeline.py               # Main orchestrator (entry point)
 |   |-- check_data.py             # Data inspection and DQ reporting
 |   |-- bronze/
+|   |   |-- __init__.py
 |   |   |-- load_bronze.py        # Bronze ingestion (6 loaders)
 |   |   |-- helper.py             # CSV reader + raw_row builder
+|   |   |-- ingestion_checker.py  # Idempotency tracker
 |   |-- silver/
+|   |   |-- __init__.py
 |   |   |-- silver_pipeline.py    # Silver orchestrator
 |   |   |-- crm/
+|   |   |   |-- __init__.py
 |   |   |   |-- crm_customers.py  # Customer cleaning & dedup
 |   |   |   |-- crm_products.py   # Product standardization
 |   |   |   |-- crm_sales.py      # Sales validation & cleaning
 |   |   |-- erp/
+|   |       |-- __init__.py
 |   |       |-- erp_customers.py  # ERP customer, location, category
 |   |-- gold/
+|   |   |-- __init__.py
 |   |   |-- gold_pipeline.py      # Gold view creation
 |   |-- extract/
+|   |   |-- __init__.py
 |   |   |-- read_csv_files.py     # CSV extraction utilities
 |   |   |-- validate_schema.py    # Schema validation
-|   |-- dq_checks/
-|   |   |-- check_nulls.py       # NOT NULL constraint checks
-|   |   |-- check_duplicates.py  # Primary key uniqueness checks
-|   |   |-- check_row_counts.py  # Row count validation across layers
+|   |-- database_checks/
+|   |   |-- __init__.py
+|   |   |-- check_nulls.py        # NOT NULL constraint checks
+|   |   |-- check_duplicates.py   # Primary key uniqueness checks
+|   |   |-- check_row_counts.py   # Row count validation across layers
 |   |   |-- check_fk_integrity.py # Foreign key referential integrity
-|   |-- utils/
-|       |-- db_connection.py      # SQLAlchemy engine factory
-|       |-- config_loader.py      # YAML config reader
+|   |-- core/
+|       |-- __init__.py
+|       |-- database.py           # SQLAlchemy engine factory
+|       |-- config.py             # YAML config reader
 |       |-- logger.py             # Centralized logging setup
 |       |-- paths.py              # Cross-platform path utilities
-|       |-- ingestion_checker.py  # Idempotency tracker
 |
 |-- sql/
 |   |-- bronze/
@@ -305,10 +314,11 @@ FK integrity rules validated:
 
 ## Running the Pipeline
 
-Run the full end-to-end pipeline:
+Run the full end-to-end pipeline from the project root:
 
 ```bash
-python python/pipeline.py
+cd d:\data_engineering_project
+python -m src.pipeline
 ```
 **Expected Output**
 ```2026-03-09 01:04:32,101 | INFO | pipeline | Pipeline start
@@ -423,9 +433,9 @@ This executes in order:
 ### Inspect the data:
 
 ```bash
-# Data quality checks 
-python python/check_data.py
-
+# Data quality checks
+cd d:\data_engineering_project
+python -m src.check_data
 ```
 
 This displays sample data from each bronze table and runs all data quality checks.
@@ -434,14 +444,18 @@ This displays sample data from each bronze table and runs all data quality check
 
 ## Running Tests
 
+All tests must be run from the project root directory:
+
 ```bash
+cd d:\data_engineering_project
+
 # Run all tests
-pytest tests/ -v
+python -m pytest tests/ -v
 
 # Run specific test suites
-pytest tests/test_pipeline.py -v          # Integration tests
-pytest tests/test_data_quality.py -v      # Data quality checks
-pytest tests/test_transformations.py -v   # Unit tests for transforms
+python -m pytest tests/test_pipeline.py -v          # Integration tests (DB, tables, data)
+python -m pytest tests/test_data_quality.py -v      # Data quality checks
+python -m pytest tests/test_transformations.py -v   # Unit tests for silver transforms
 ```
 
 ---

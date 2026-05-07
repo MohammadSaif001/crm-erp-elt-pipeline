@@ -5,17 +5,11 @@ Reads SQL view definitions from sql/gold/create_dim_customers.sql
 and executes them against the MySQL gold database.
 """
 import os
-import sys
-current_dir = os.path.dirname(os.path.abspath(__file__))
-python_folder = os.path.dirname(current_dir)
-
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
-
 from sqlalchemy import text
-from utils.db_connection import get_engine
-from utils.paths import get_project_root
-from utils.logger import setup_logger
+from src.core.logger import setup_logger
+from src.core.database import get_engine
+from src.core.paths import get_project_root
+
 
 logger = setup_logger("gold_pipeline")
 

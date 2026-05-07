@@ -8,18 +8,11 @@ Usage:
     cd d:\\data_engineering_project
     python -m pytest tests/test_pipeline.py -v
 """
-import sys
 import os
 import pytest
-
-# Path setup so we can import from python/
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-python_dir = os.path.join(project_root, "python")
-if python_dir not in sys.path:
-    sys.path.insert(0, python_dir)
-
 from sqlalchemy import text, inspect
-from utils.db_connection import get_engine
+from src.core.database import get_engine
+from src.core.paths import get_project_root
 
 
 
@@ -196,7 +189,7 @@ class TestEndToEnd:
 
     def test_source_csv_files_exist(self):
         """Check that the raw source files are present."""
-        raw_dir = os.path.join(project_root, "data", "raw")
+        raw_dir = os.path.join(get_project_root(), "data", "raw")
         expected = [
             os.path.join("source_crm", "cust_info.csv"),
             os.path.join("source_crm", "prd_info.csv"),
@@ -212,7 +205,7 @@ class TestEndToEnd:
     def test_pipeline_config_valid(self):
         """Check pipeline_config.yaml is loadable and has expected keys."""
         import yaml
-        config_path = os.path.join(project_root, "configs", "pipeline_config.yaml")
+        config_path = os.path.join(get_project_root(), "configs", "pipeline_config.yaml")
         with open(config_path, "r") as f:
             cfg = yaml.safe_load(f)
         assert "bronze" in cfg, "pipeline_config.yaml missing 'bronze' section"

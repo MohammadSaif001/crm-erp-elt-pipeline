@@ -9,19 +9,15 @@ Usage:
     python -m pytest tests/test_transformations.py -v
 """
 import sys
-import os
-import pytest
+from pathlib import Path
+
 import pandas as pd
-import numpy as np
 
-# Path setup
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-python_dir = os.path.join(project_root, "python")
-if python_dir not in sys.path:
-    sys.path.insert(0, python_dir)
-
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 # Import transformation functions from each silver module
-from silver.crm.crm_customers import (
+from src.silver.crm.crm_customers import (
     normalize_data as cust_normalize,
     enforce_schema as cust_enforce_schema,
     standardize_data as cust_standardize,
@@ -29,14 +25,14 @@ from silver.crm.crm_customers import (
     remove_null_primary_keys,
     schema_customer,
 )
-from silver.crm.crm_products import (
+from src.silver.crm.crm_products import (
     normalize_data as prod_normalize,
     enforce_schema as prod_enforce_schema,
     standardize_data as prod_standardize,
     transform_crm_products,
     schema_products,
 )
-from silver.crm.crm_sales import (
+from src.silver.crm.crm_sales import (
     normalize_data as sales_normalize,
     enforce_schema as sales_enforce_schema,
     datetime_conversion,
@@ -44,7 +40,7 @@ from silver.crm.crm_sales import (
     clean_sales_data,
     schema_sales,
 )
-from silver.erp.erp_customers import (
+from src.silver.erp.erp_customers import (
     standardize_customer_id,
     apply_value_replacements,
     transform_erp_cid_column,

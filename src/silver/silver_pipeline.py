@@ -1,17 +1,8 @@
-import os
-import sys
-import logging
-current_dir = os.path.dirname(os.path.abspath(__file__))
-python_folder = os.path.dirname(current_dir)
-
-if python_folder not in sys.path:
-    sys.path.append(python_folder)
-
-from utils.logger import setup_logger
-from silver.crm.crm_customers import run_customers_pipeline
-from silver.crm.crm_products import run_products_pipeline
-from silver.crm.crm_sales import run_sales_pipeline
-from silver.erp.erp_customers import (
+from src.core.logger import setup_logger
+from src.silver.crm.crm_customers import run_customers_pipeline
+from src.silver.crm.crm_products import run_products_pipeline
+from src.silver.crm.crm_sales import run_sales_pipeline
+from src.silver.erp.erp_customers import (
     run_customer_pipeline,
     run_location_pipeline,
     run_category_pipeline,

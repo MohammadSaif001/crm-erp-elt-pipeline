@@ -4,7 +4,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# Resolve project root safely (Windows/Linux independent)
+
 PROJECT_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..")
 )

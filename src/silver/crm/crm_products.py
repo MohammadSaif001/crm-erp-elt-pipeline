@@ -1,17 +1,7 @@
-import sys
 import pandas as pd
-from pathlib import Path
+from src.core.database import get_engine
+from src.core.logger import setup_logger
 from sqlalchemy import Date, String, Numeric, DateTime
-from utils.logger import setup_logger
-# Setup path for module imports
-_current_file = Path(__file__).resolve()
-_python_root = _current_file.parents[2]  # Navigate: crm → silver → python
-
-if str(_python_root) not in sys.path:
-    sys.path.insert(0, str(_python_root))
-
-from utils.db_connection import get_engine
-
 logger = setup_logger(__name__.split(".")[-1])
 
 def extract_from_bronze(table_name: str) -> pd.DataFrame:

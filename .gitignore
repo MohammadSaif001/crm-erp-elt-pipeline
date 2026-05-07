@@ -16,6 +16,8 @@ logs/
 # Python cache
 __pycache__/
 *.pyc
+.pytest_cache/
+.vscode/
 
 # VS Code
 vscode/settings.json
