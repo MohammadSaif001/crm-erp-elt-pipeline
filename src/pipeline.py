@@ -4,7 +4,7 @@ from src.core.schema_manager import execute_sql_file
 from src.core.database import get_engine
 from src.silver.silver_pipeline import run_silver_pipeline
 from src.gold.gold_pipeline import run_gold_pipeline
-from src.bronze.load_bronze import run_bronze_pipeline, data_base_connection
+from src.bronze.load_bronze import run_bronze_pipeline
 
 logger = setup_logger("pipeline")
 

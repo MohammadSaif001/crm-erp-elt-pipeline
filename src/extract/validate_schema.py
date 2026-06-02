@@ -8,18 +8,9 @@ Usage:
     from extract.validate_schema import validate_all_schemas, validate_schema
 """
 import pandas as pd
-from src.extract.read_csv_files import read_source_file
 from src.core.logger import setup_logger
-
-# current_dir = Path(__file__).resolve().parent
-# python_folder = current_dir.parent
-# if str(python_folder) not in sys.path:
-#     sys.path.append(str(python_folder))
-
-# from extract.read_csv_files import read_source_file
-# from utils.logger import setup_logger
 from src.extract.read_csv_files import read_source_file
-from src.core.logger import setup_logger
+
 
 logger = setup_logger(__name__.split(".")[-1])
 
