@@ -211,6 +211,3 @@ class TestEndToEnd:
         assert "bronze" in cfg, "pipeline_config.yaml missing 'bronze' section"
         assert "targets" in cfg["bronze"], "No 'targets' under bronze config"
         assert len(cfg["bronze"]["targets"]) == 6, "Expected 6 bronze targets"
-
-if __name__ == "__main__":
-    pytest.main(["-v", "tests/test_pipeline.py"])

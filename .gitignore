@@ -1,38 +1,31 @@
-# Secrets & configs
-*.json
-*.yml
-*.yaml
-
-# Logs
-logs/
-*.log
-# Notebooks like Jupyter
-*.ipynb
-
-# Environment files
+# Environment files and secrets
 .env
 .env.*
+!.env.example
+!**/.env.example
 
-# Python cache
+# database credentials
+configs/
+
+# lib
+lib/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.so
 .pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Logs and generated data
+*.log
+data/processed/
+visual_rep/
+
+# Editor and operating-system files
 .vscode/
-
-# VS Code
-vscode/settings.json
-vscode/launch.json
-
-# OS files
 .DS_Store
 Thumbs.db
-Desktop.ini
-
-# Local data/state
-data/processed/
-
-# Ignore test outputs
-.pytest_cache/
-
-# Ignore nul
-nul
