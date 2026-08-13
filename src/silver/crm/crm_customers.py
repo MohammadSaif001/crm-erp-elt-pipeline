@@ -212,13 +212,13 @@ def run_customers_pipeline(table_name: str)-> None:
          if_exists = "replace",
          index=False,
          dtype={
-            "cst_id"                      : String(50),
-            "cst_key"                    : String(100),
-            "cst_firstname"          : String(200),
-            "cst_lastname"            : String(200),
-            "cst_marital_status"   : String(50),
-            "cst_gender"               : String(50),
-            "cst_create_date"      : Date(),
+            "cst_id"                     : String(50),
+            "cst_key"                   : String(100),
+            "cst_firstname"             : String(200),
+            "cst_lastname"              : String(200),
+            "cst_marital_status"        : String(50),
+            "cst_gender"                : String(50),
+            "cst_create_date"           : Date(),
             "loaded_at"                 : DateTime()
          }, # type: ignore
          chunksize=1000
