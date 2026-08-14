@@ -1,31 +1,33 @@
-"""
-config.py
-==============================================================================
-Central configuration for the ELT Data Engineering Pipeline Dashboard.
-
-Reads MySQL connection details from environment variables (falls back to the
-same defaults used by the pipeline's `configs/db_config.json`) and exposes a
-single `Settings` object used throughout the app.
-
-SCHEMA ASSUMPTION NOTICE
---------------------------------------------------------------------------
-The upstream pipeline repository (rashid-dsai/elt-data-engineering-pipeline)
-documents the Gold layer as three views with a fixed column COUNT but does
-not publish the literal `CREATE VIEW` SQL in its README. Column names below
-are INFERRED from the repository's documented naming conventions (e.g.
-`cst_id`, `prd_key`, `sls_*` prefixes, FK integrity rules) and are marked
-with `# ASSUMED` wherever they are not verbatim from the README. If your
-actual view definitions differ, update `GOLD_SCHEMA` below — every query in
-`database/queries.py` is written against these names, in one place, so a
-schema change only requires editing this file.
---------------------------------------------------------------------------
-"""
-
 from __future__ import annotations
-
+import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+
+
+def _load_local_database_config() -> dict[str, object]:
+    """Load the untracked pipeline DB config for local dashboard development."""
+    config_path = Path(__file__).resolve().parent.parent / "configs" / "db_config.json"
+    if not config_path.exists():
+        return {}
+    try:
+        with config_path.open("r", encoding="utf-8") as config_file:
+            return json.load(config_file).get("mysql", {})
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Unable to read database config at {config_path}") from exc
+
+
+_LOCAL_DB_CONFIG = _load_local_database_config()
+
+
+def _database_setting(environment_name: str, config_name: str, default: str | None = None) -> str:
+    value = os.getenv(environment_name) or _LOCAL_DB_CONFIG.get(config_name) or default
+    if value is None:
+        raise RuntimeError(
+            f"{environment_name} environment variable is not set and "
+            "configs/db_config.json does not provide a value"
+        )
+    return str(value)
 
 
 
@@ -33,13 +35,13 @@ from pathlib import Path
 class DatabaseSettings:
     """MySQL connection settings for the Gold layer database."""
 
-    host: str = os.getenv("DB_HOST", "localhost")
-    port: int = int(os.getenv("DB_PORT", "3306"))
-    user: str = os.getenv("DB_USER", "root")
-    password: str = os.getenv("DB_PASSWORD", "841506")
-    gold_db: str = os.getenv("GOLD_DB", "gold_db")
-    silver_db: str = os.getenv("SILVER_DB", "silver_db")
-    bronze_db: str = os.getenv("BRONZE_DB", "bronze_db")
+    host: str = _database_setting("DB_HOST", "host", "localhost")
+    port: int = int(_database_setting("DB_PORT", "port", "3306"))
+    user: str = _database_setting("DB_USER", "user", "root")
+    password: str = _database_setting("DB_PASSWORD", "password")
+    gold_db: str = _database_setting("GOLD_DB", "gold_db", "gold_db")
+    silver_db: str = _database_setting("SILVER_DB", "silver_db", "silver_db")
+    bronze_db: str = _database_setting("BRONZE_DB", "bronze_db", "bronze_db")
     connect_timeout: int = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
     pool_size: int = int(os.getenv("DB_POOL_SIZE", "5"))
     pool_recycle: int = int(os.getenv("DB_POOL_RECYCLE", "3600"))
@@ -64,13 +66,13 @@ GOLD_SCHEMA = {
         "table": "dim_customers",
         "columns": {
             "customer_key": "customer_key",        # ASSUMED surrogate key (ROW_NUMBER())
-            "customer_id": "cst_id",                # documented (CRM source)
-            "customer_number": "cst_key",           # documented (CRM source, join key)
+            "customer_id": "customer_id",           # Gold view alias
+            "customer_number": "customer_number",   # Gold view alias
             "first_name": "first_name",             # ASSUMED
             "last_name": "last_name",               # ASSUMED
             "marital_status": "marital_status",     # documented (standardized)
             "gender": "gender",                     # documented (CRM primary, ERP fallback)
-            "birthdate": "birthdate",                # ASSUMED (from ERP CUST_AZ12.BDATE)
+            "birthdate": "birthday",                 # from ERP CUST_AZ12.BDATE
             "country": "country",                    # documented (from ERP LOC_A101)
             "create_date": "create_date",             # ASSUMED (CRM cst_create_date)
         },
@@ -79,16 +81,16 @@ GOLD_SCHEMA = {
         "table": "dim_products",
         "columns": {
             "product_key": "product_key",           # ASSUMED surrogate key (ROW_NUMBER())
-            "product_id": "prd_id",                  # documented (CRM source)
-            "product_number": "prd_key",              # documented (CRM source, join key)
+            "product_id": "product_id",               # Gold view alias
+            "product_number": "product_number",       # Gold view alias
             "product_name": "product_name",           # ASSUMED (from prd_nm)
             "category_id": "category_id",             # documented (extracted from prd_key)
-            "category": "category",                   # documented (ERP CAT)
-            "subcategory": "subcategory",             # documented (ERP SUBCAT)
+            "category": "category_name",              # from ERP CAT
+            "subcategory": "subcategory_name",        # from ERP SUBCAT
             "maintenance": "maintenance",             # documented (ERP MAINTENANCE)
-            "cost": "cost",                            # ASSUMED (from prd_cost)
+            "cost": "product_cost",                   # from prd_cost
             "product_line": "product_line",           # documented (Road/Mountain/Touring/Other)
-            "start_date": "start_date",               # ASSUMED (from prd_start_dt)
+            "start_date": "product_start_date",       # from prd_start_dt
         },
     },
     "fact_sales": {

@@ -1,23 +1,7 @@
-"""
-database/queries.py
-==============================================================================
-All SQL queries used by the dashboard, centralized in one module so that:
-  1. Column-name assumptions (see config.GOLD_SCHEMA) only need to be
-     corrected in one place.
-  2. Every page function is a thin wrapper: build filters -> run_query ->
-     cached DataFrame.
-
-Every public function is wrapped in `st.cache_data` with a TTL, keyed on its
-arguments, so identical filter combinations reuse cached results instead of
-re-hitting MySQL on every widget interaction.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
 import csv
 from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
@@ -73,12 +57,7 @@ def _base_from() -> str:
     )
 
 
-# NOTE: pandas `read_sql` with SQLAlchemy `text()` expands tuple params for
-# IN clauses automatically when using `:name` with a tuple value under the
-# psycopg/pymysql dialects via SQLAlchemy's `expanding=True` binding. To keep
-# this file dependency-light and explicit, filters are applied with plain
-# `IN :param` bind expansion, which SQLAlchemy 2.0 handles natively for
-# tuple-valued parameters.
+
 
 
 @st.cache_data(ttl=TTL, show_spinner=False)

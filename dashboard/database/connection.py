@@ -1,19 +1,5 @@
-"""
-database/connection.py
-==============================================================================
-SQLAlchemy engine factory for the dashboard.
-
-Mirrors the pattern used by the pipeline's own `src/core/database.py`
-(engine-per-database), but adds Streamlit-aware caching so the dashboard
-does not open a fresh connection pool on every rerun, plus defensive error
-handling so a database outage degrades gracefully in the UI instead of
-crashing the app.
-"""
-
 from __future__ import annotations
-
 import logging
-
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text

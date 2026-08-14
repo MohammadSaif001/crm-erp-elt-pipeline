@@ -1,12 +1,6 @@
-import os
 import logging
-import pandas as pd
 from sqlalchemy  import text
-
 logger = logging.getLogger(__name__)
-
-
-
 
 
 def is_hash_processed(engine, file_hash):

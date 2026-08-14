@@ -1,14 +1,5 @@
-"""
-components/sidebar.py
-==============================================================================
-Renders the simple corporate sidebar: application title, database status,
-and the [ Refresh Pipeline Report ] button.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
-
 from config import APP_SETTINGS, DB_SETTINGS
 from database.connection import test_connection
 from utils.cache import bump_last_refresh, clear_all_caches, get_last_refresh_key

@@ -1,11 +1,6 @@
-"""Shared editorial shell for the ELT operational report."""
-
 from __future__ import annotations
-
 from html import escape
-
 import streamlit as st
-
 from config import APP_SETTINGS
 
 

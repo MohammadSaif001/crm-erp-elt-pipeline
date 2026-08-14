@@ -9,10 +9,20 @@ Usage:
 """
 import pandas as pd
 from src.core.logger import setup_logger
-from src.extract.read_csv_files import read_source_file
+from src.core.paths import get_raw_data_path
 
 
 logger = setup_logger(__name__.split(".")[-1])
+
+
+def _read_source_file(source_folder: str, file_name: str) -> pd.DataFrame:
+    """Read a source file only when validation is invoked without a dataframe."""
+    csv_path = get_raw_data_path(f"{source_folder}/{file_name}")
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Source CSV not found: {csv_path}")
+    df = pd.read_csv(csv_path, dtype=str)
+    df.columns = df.columns.str.strip().str.lower()
+    return df
 
 # Expected columns per source table (after header normalization: stripped + lowered).
 # These match what the bronze layer expects.
@@ -29,8 +39,8 @@ EXPECTED_SCHEMAS = {
         "source": "source_crm",
         "file_name": "prd_info.csv",
         "required_columns": [
-            "prd_id", "prd_key", "prd_name", "prd_cost",
-            "prd_line", "prd_start_date", "prd_end_date",
+            "prd_id", "prd_key", "prd_nm", "prd_cost",
+            "prd_line", "prd_start_dt", "prd_end_dt",
         ],
     },
     "crm_sales_details": {
@@ -38,7 +48,7 @@ EXPECTED_SCHEMAS = {
         "file_name": "sales_details.csv",
         "required_columns": [
             "sls_ord_num", "sls_prd_key", "sls_cust_id",
-            "sls_order_date", "sls_ship_date", "sls_due_date",
+            "sls_order_dt", "sls_ship_dt", "sls_due_dt",
             "sls_sales", "sls_quantity", "sls_price",
         ],
     },
@@ -87,7 +97,7 @@ def validate_schema(
 
     if df is None:
         try:
-            df = read_source_file(spec["source"], spec["file_name"])
+            df = _read_source_file(spec["source"], spec["file_name"])
         except FileNotFoundError as e:
             return {
                 "table": table_name,

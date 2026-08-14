@@ -1,5 +1,5 @@
 import pandas as pd
-from src.core.database import get_engine
+from src.core.database import get_engine, load_to_silver
 from src.core.logger import setup_logger
 from sqlalchemy import String, Date, DateTime
 
@@ -117,24 +117,24 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     #! Gender Standardization
-    df["cst_gndr"] = (
-        df["cst_gndr"]
-        .str.lower()
-        .map({
+    gender_mapping = {
             "m": "Male",
             "f": "Female",
-        })
-    )
-
-    #!Marital Status Standardization
-    df["cst_marital_status"] = (
-        df["cst_marital_status"]
-        .str.lower()
-        .map({
+        }
+    marital_mapping = {
             "s": "Single",
             "m": "Married",
+        }
+    for column, mapping in (("cst_gndr", gender_mapping), ("cst_marital_status", marital_mapping)):
+        normalized = df[column].str.strip()
+        normalized_keys = normalized.str.lower()
+        unknown = normalized.notna() & ~normalized_keys.isin(mapping)
+        if unknown.any():
+            logger.warning("[UNMAPPED VALUE] %s: %s", column, sorted(normalized[unknown].unique()))
+        df[column] = normalized.replace({
+            **mapping,
+            **{key.upper(): value for key, value in mapping.items()},
         })
-    )
 
     df[["cst_gndr","cst_marital_status"]] = df[["cst_gndr","cst_marital_status"]].fillna("n/a")
 
@@ -190,6 +190,7 @@ def run_customers_pipeline(table_name: str)-> None:
     df_customers = extract_from_bronze(table_name)
     df_customers = enforce_schema(df_customers, schema_customer) # object → string, datetime → datetime64, etc.
     df_customers = normalize_data(df_customers)           
+    df_customers = df_customers.drop(columns=["ingest_id"], errors="ignore")
     df_customers = standardize_data(df_customers) # standardize gender and marital status values  
     df_customers = remove_null_primary_keys(df_customers, primary_key="cst_id")
 
@@ -206,12 +207,11 @@ def run_customers_pipeline(table_name: str)-> None:
     })
     df_customers["loaded_at"] = pd.Timestamp.now()
 
-    df_customers.to_sql(
-        name = "crm_customers_info",
-        con  = get_engine("silver"),
-         if_exists = "replace",
-         index=False,
-         dtype={
+    load_to_silver(
+        df_customers,
+        "crm_customers_info",
+        get_engine("silver"),
+        dtype={
             "cst_id"                     : String(50),
             "cst_key"                   : String(100),
             "cst_firstname"             : String(200),
@@ -220,9 +220,9 @@ def run_customers_pipeline(table_name: str)-> None:
             "cst_gender"                : String(50),
             "cst_create_date"           : Date(),
             "loaded_at"                 : DateTime()
-         }, # type: ignore
-         chunksize=1000
-         )
+         },
+        chunksize=1000,
+    )
 
 if __name__ == "__main__":
     run_customers_pipeline("crm_customers_info")

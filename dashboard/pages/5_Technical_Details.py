@@ -1,16 +1,5 @@
-"""
-pages/5_Technical_Details.py
-==============================================================================
-TECHNICAL DETAILS & LOGS
-Low-priority technical diagnostics, environment parameters, raw logs, and schema maps.
-"""
-
 from __future__ import annotations
-
-import os
-
 import streamlit as st
-
 from components.sidebar import render_sidebar
 from components.report_shell import apply_report_styles, render_footer, render_page_intro, render_section_title, render_site_header
 from config import APP_SETTINGS, DB_SETTINGS, GOLD_SCHEMA
@@ -105,7 +94,11 @@ st.markdown(f'<div class="log-box">{log_text}</div>', unsafe_allow_html=True)
 # 3. Gold Schema Map Definition
 with st.expander("GOLD SCHEMA DEFINITION MAP", expanded=False):
     st.caption("Star Schema Table & Column Mapping Configuration:")
-    for view_name, cols in GOLD_SCHEMA.items():
-        st.markdown(f"**{view_name}** ({len(cols)} columns):")
-        st.code(", ".join(cols), language="text")
+    for view_name, schema in GOLD_SCHEMA.items():
+        columns = schema["columns"]
+        st.markdown(f"**{view_name}** ({len(columns)} columns):")
+        st.code(
+            "\n".join(f"{label} → {column}" for label, column in columns.items()),
+            language="text",
+        )
 render_footer()

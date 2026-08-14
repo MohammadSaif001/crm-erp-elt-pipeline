@@ -1,13 +1,4 @@
-"""
-components/navbar.py
-==============================================================================
-Top-of-page header: title, subtitle, and optional right-aligned status badges
-(e.g. "Live", "Last Run: ..."). Used at the top of every page for a
-consistent enterprise-BI look.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
 
 
