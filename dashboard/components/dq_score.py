@@ -1,15 +1,7 @@
-"""
-components/dq_score.py
-==============================================================================
-Renders plain old-school Data Quality Report tables and Attention Required blocks.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
-
 from database.queries import compute_dq_score
-from utils.helpers import humanize_check_detail, humanize_check_name
+from utils.helpers import humanize_check_detail
 from components.report_shell import render_section_title, status_markup
 
 

@@ -1,5 +1,5 @@
 import pandas as pd
-from src.core.database import get_engine
+from src.core.database import get_engine, load_to_silver
 from src.core.logger import setup_logger
 from sqlalchemy import String, Date, DateTime
 
@@ -141,22 +141,22 @@ def run_customer_pipeline()-> None:
         
         df_customer = drop_technical_columns(df_customer)
         df_customer = df_customer.drop(columns=["ingest_id"], errors="ignore")
+        df_customer = df_customer.drop_duplicates(subset=["cid"], keep="last")
         logger.info("Technical columns dropped.")
         
         #! Save to silver layer
         df_customer["loaded_at"] = pd.Timestamp.now()
-        df_customer.to_sql(
-            name = "erp_cust_az12",
-            con  = get_engine("silver"),
-            if_exists = "replace",
-            index=False,
+        load_to_silver(
+            df_customer,
+            "erp_cust_az12",
+            get_engine("silver"),
             dtype={
                 "cid" : String(100),
                 "birth_date_raw": Date(),
                 "gender_raw": String(50),
                 "loaded_at": DateTime()
-            }, # type: ignore
-            chunksize=1000
+            },
+            chunksize=1000,
         )
         logger.info("ERP Customers Silver Pipeline completed successfully.")
     except Exception as e:
@@ -177,6 +177,8 @@ def run_location_pipeline()-> None:
         logger.info("Value replacements applied for location data.")
         
         df_location = drop_technical_columns(df_location)
+        df_location = df_location.drop(columns=["ingest_id"], errors="ignore")
+        df_location = df_location.drop_duplicates(subset=["cid"], keep="last")
         logger.info("Technical columns dropped for location data.")
 
         df_location = transform_erp_cid_column(df_location)
@@ -184,17 +186,16 @@ def run_location_pipeline()-> None:
 
         #! Save to silver layer
         df_location["loaded_at"] = pd.Timestamp.now()
-        df_location.to_sql(
-            name="erp_location_a101",
-            con=get_engine("silver"),
-            if_exists="replace",
-            index=False,
+        load_to_silver(
+            df_location,
+            "erp_location_a101",
+            get_engine("silver"),
             dtype={
                 "cid": String(100),
                 "country_name": String(255),
                 "loaded_at": DateTime()
-            }, # type: ignore
-            chunksize=1000
+            },
+            chunksize=1000,
         )
         logger.info("ERP Customer Locations Silver Pipeline completed successfully.")
     except Exception as e:
@@ -208,22 +209,22 @@ def run_category_pipeline()-> None:
         
         df_category = drop_technical_columns(df_category)
         df_category = df_category.drop(columns=["ingest_id"], errors="ignore")
+        df_category = df_category.drop_duplicates(subset=["id"], keep="last")
         logger.info("Technical columns dropped for category data.")
     
         df_category["loaded_at"] = pd.Timestamp.now()
-        df_category.to_sql(
-            name   = "erp_px_cat_g1v2",
-            con  = get_engine("silver"),
-            if_exists = "replace",
-            index=False,
+        load_to_silver(
+            df_category,
+            "erp_px_cat_g1v2",
+            get_engine("silver"),
             dtype={
                 "id" : String(100),
                 "cat": String(100),
                 "subcat": String(100),
                 "maintenance_raw": String(100),
                 "loaded_at": DateTime()
-            }, # type: ignore
-            chunksize=1000
+            },
+            chunksize=1000,
         )
         logger.info("ERP Product Categories Silver Pipeline completed successfully.")
     except Exception as e:  

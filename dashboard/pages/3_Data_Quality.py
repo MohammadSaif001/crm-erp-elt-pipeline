@@ -1,14 +1,5 @@
-"""
-pages/3_Data_Quality.py
-==============================================================================
-DATA QUALITY REPORT
-Detailed breakdown of NULL, duplicate, foreign-key, and row count checks.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
-
 from components.sidebar import render_sidebar
 from components.report_shell import apply_report_styles, render_footer, render_page_intro, render_section_title, render_site_header, status_markup
 from config import APP_SETTINGS

@@ -1,15 +1,6 @@
-"""
-pages/4_Database_Health.py
-==============================================================================
-DATABASE HEALTH REPORT
-Connection status, server parameters, and medallion table statistics.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
 import pandas as pd
-
 from components.sidebar import render_sidebar
 from components.report_shell import apply_report_styles, render_footer, render_page_intro, render_section_title, render_site_header
 from config import APP_SETTINGS, DB_SETTINGS

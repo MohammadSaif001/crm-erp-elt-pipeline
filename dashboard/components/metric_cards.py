@@ -1,15 +1,5 @@
-"""
-components/metric_cards.py
-==============================================================================
-Reusable KPI card renderer. Renders a styled HTML card (see assets/styles.css
-`.metric-card`) rather than `st.metric`, so we get full control over hover
-animation, icon placement, and delta coloring for the enterprise-BI look.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
-
 from utils.helpers import format_currency, format_number, format_percent
 
 

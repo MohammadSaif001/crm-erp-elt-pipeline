@@ -47,6 +47,7 @@ from src.silver.erp.erp_customers import (
     customer_replacemts,
     location_replacements,
 )
+from src.extract.validate_schema import validate_schema
 
 
 # ==========================================================================
@@ -56,6 +57,7 @@ def _make_customer_df():
     """Minimal customer dataframe mimicking bronze output."""
     return pd.DataFrame({
         "raw_row": ['{"a":1}', '{"b":2}', '{"c":3}'],
+        "ingest_id": [1, 2, 3],
         "cst_id": ["1", "2", "3"],
         "cst_key": ["AW00011000", "AW00011001", "AW00011002"],
         "cst_firstname": ["  john  ", "  JANE  ", "  bob  "],
@@ -164,6 +166,22 @@ class TestCustomerStandardize:
         df = pd.DataFrame(columns=["cst_gndr", "cst_marital_status"])
         result = cust_standardize(df)
         assert result.empty
+
+    def test_unrecognized_gender_is_preserved(self):
+        df = _make_customer_df()
+        df.loc[0, "cst_gndr"] = "X"
+        df = cust_enforce_schema(df, schema_customer)
+        df = cust_normalize(df)
+        df = cust_standardize(df)
+        assert df["cst_gndr"].iloc[0] == "X"
+
+
+class TestBronzeSchemaValidation:
+    def test_missing_required_column_fails_validation(self):
+        df = pd.DataFrame({"cst_id": ["1"], "cst_key": ["AW00011000"]})
+        result = validate_schema("crm_customers_info", df)
+        assert result["status"] == "FAIL"
+        assert "cst_gndr" in result["missing_columns"]
 
 
 class TestDeduplicateLatestByDate:

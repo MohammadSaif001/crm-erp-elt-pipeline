@@ -1,14 +1,5 @@
-"""
-components/pipeline_status.py
-==============================================================================
-Renders plain old-school web report components for pipeline status, run details,
-and Medallion architecture tables.
-"""
-
 from __future__ import annotations
-
 import streamlit as st
-
 from database.connection import test_connection
 from database.queries import compute_dq_score, get_pipeline_lineage, get_row_counts
 from utils.helpers import (

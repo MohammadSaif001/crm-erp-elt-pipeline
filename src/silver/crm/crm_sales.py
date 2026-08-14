@@ -1,5 +1,5 @@
 import pandas as pd
-from src.core.database import get_engine
+from src.core.database import get_engine, load_to_silver
 from src.core.logger import setup_logger
 from sqlalchemy import String, Integer, Numeric, DateTime, Date
 
@@ -172,6 +172,12 @@ def run_sales_pipeline(table_name: str)-> None:
 
     valid_df = clean_sales_data(valid_df)
     valid_df = valid_df.drop(columns=["ingest_id"], errors="ignore")
+    before = len(valid_df)
+    valid_df = valid_df.drop_duplicates(
+        subset=["sales_ord_num", "sales_prd_key"], keep="last"
+    )
+    if len(valid_df) != before:
+        logger.warning("[DEDUP] Removed %s duplicate sales rows", before - len(valid_df))
 
     valid_df = valid_df.rename(columns={
         "sales_order_date_raw": "sales_order_date",
@@ -180,11 +186,10 @@ def run_sales_pipeline(table_name: str)-> None:
     })
     valid_df["loaded_at"] = pd.Timestamp.now()
 
-    valid_df.to_sql(
-        name = "crm_sales_details",
-        con  = get_engine("silver"),
-        if_exists = "replace",
-        index=False,
+    load_to_silver(
+        valid_df,
+        "crm_sales_details",
+        get_engine("silver"),
         dtype={
             "sales_ord_num"       : String(100),
             "sales_prd_key"       : String(100),
@@ -196,8 +201,8 @@ def run_sales_pipeline(table_name: str)-> None:
             "sales_ship_date"     : Date(),
             "sales_due_date"      : Date(),
             "loaded_at"           : DateTime()
-         }, # type: ignore
-         chunksize=1000
-         )
+         },
+        chunksize=1000,
+    )
 if __name__ == "__main__":
     run_sales_pipeline("crm_sales_details")

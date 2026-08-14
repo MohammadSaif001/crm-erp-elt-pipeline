@@ -1,17 +1,7 @@
-"""
-pages/1_Home.py
-==============================================================================
-ELT PIPELINE HEALTH REPORT (Home Page)
-Operational health report for production pipeline monitoring.
-"""
-
 from __future__ import annotations
-
 from html import escape
-
 import streamlit as st
 import pandas as pd
-
 from components.dq_score import render_full_dq_report
 from components.pipeline_status import (
     compute_overall_pipeline_status,

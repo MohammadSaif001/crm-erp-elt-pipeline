@@ -1,13 +1,4 @@
-"""
-components/charts.py
-==============================================================================
-Reusable Plotly chart builders, all themed for the dark enterprise-BI look
-defined in config.AppSettings. Every function returns a `go.Figure` — pages
-are responsible for `st.plotly_chart(fig, use_container_width=True)`.
-"""
-
 from __future__ import annotations
-
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go

@@ -95,6 +95,15 @@ SILVER_TABLES = [
     "erp_px_cat_g1v2",
 ]
 
+SILVER_SCHEMA = {
+    "crm_customers_info": {"cst_id", "cst_key", "cst_firstname", "cst_lastname", "cst_marital_status", "cst_gender", "cst_create_date"},
+    "crm_prd_info": {"prd_id", "prd_key", "cat_id", "prd_name", "prd_cost", "prd_line", "prd_start_dt", "prd_end_dt"},
+    "crm_sales_details": {"sales_ord_num", "sales_prd_key", "sales_cust_id", "sales_order_date", "sales_ship_date", "sales_due_date", "sales_sales", "sales_quantity", "sales_price"},
+    "erp_cust_az12": {"cid", "birth_date_raw", "gender_raw"},
+    "erp_location_a101": {"cid", "country_name"},
+    "erp_px_cat_g1v2": {"id", "cat", "subcat", "maintenance_raw"},
+}
+
 
 class TestSilverLayer:
     """Validate silver layer tables exist, have data, and are cleaner than bronze."""
@@ -132,6 +141,18 @@ class TestSilverLayer:
                 assert s_count <= b_count, (
                     f"Silver {table} ({s_count}) has MORE rows than Bronze ({b_count})"
                 )
+
+    def test_silver_schema_matches_ddl(self, silver_engine):
+        """Silver loads must retain the schema created by the DDL."""
+        inspector = inspect(silver_engine)
+        for table, expected_columns in SILVER_SCHEMA.items():
+            columns = {column["name"] for column in inspector.get_columns(table)}
+            assert expected_columns <= columns, f"{table} is missing DDL columns"
+            primary_key = set(inspector.get_pk_constraint(table)["constrained_columns"])
+            if table == "crm_sales_details":
+                assert primary_key == {"sales_ord_num", "sales_prd_key"}
+            else:
+                assert primary_key, f"{table} is missing a primary key"
 
 
 
@@ -179,6 +200,17 @@ class TestGoldLayer:
             if null_prod > 0:
                 pct = round(null_prod / total * 100, 1)
                 print(f"WARNING: {null_prod} ({pct}%) rows have NULL product_key")
+
+    def test_gold_schema_matches_dashboard_config(self, gold_engine, monkeypatch):
+        """Dashboard queries must use the actual Gold-view column names."""
+        monkeypatch.setenv("DB_PASSWORD", "test")
+        from dashboard.config import GOLD_SCHEMA
+
+        inspector = inspect(gold_engine)
+        for view, schema in GOLD_SCHEMA.items():
+            columns = {column["name"] for column in inspector.get_columns(view)}
+            expected = set(schema["columns"].values())
+            assert expected <= columns, f"{view} and dashboard.config disagree"
 
 
 

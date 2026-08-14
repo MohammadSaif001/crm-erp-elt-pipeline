@@ -1,17 +1,6 @@
-"""
-components/filters.py
-==============================================================================
-Global filter bar (date range, country, category, gender, marital status)
-rendered at the top of analytics pages. Selections are stored in
-`st.session_state` so they persist across page navigation within a session.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
-
 import streamlit as st
-
 from database.queries import get_filter_options
 
 
