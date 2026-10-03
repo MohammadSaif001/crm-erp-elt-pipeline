@@ -8,15 +8,17 @@ Usage:
     cd d:\\data_engineering_project
     python -m pytest tests/test_pipeline.py -v
 """
+
 import os
+
 import pytest
-from sqlalchemy import text, inspect
+from sqlalchemy import inspect, text
+
 from src.core.database import get_engine
 from src.core.paths import get_project_root
 
-
-
 #! Fixtures
+
 
 @pytest.fixture(scope="module")
 def bronze_engine():
@@ -33,8 +35,8 @@ def gold_engine():
     return get_engine("gold")
 
 
-
 #! 1) Database connectivity tests
+
 
 class TestDatabaseConnectivity:
     """Verify that each database layer is reachable."""
@@ -45,7 +47,6 @@ class TestDatabaseConnectivity:
         with engine.connect() as conn:
             result = conn.execute(text("SELECT 1"))
             assert result.scalar() == 1, f"Cannot connect to {layer} database"
-
 
 
 #! 2) Bronze layer tests
@@ -83,7 +84,6 @@ class TestBronzeLayer:
             assert "raw_row" in cols, f"'{table}' missing 'raw_row' column"
 
 
-
 #! 3) Silver layer tests
 
 SILVER_TABLES = [
@@ -95,6 +95,45 @@ SILVER_TABLES = [
     "erp_px_cat_g1v2",
 ]
 
+<<<<<<< Updated upstream
+=======
+SILVER_SCHEMA = {
+    "crm_customers_info": {
+        "cst_id",
+        "cst_key",
+        "cst_firstname",
+        "cst_lastname",
+        "cst_marital_status",
+        "cst_gender",
+        "cst_create_date",
+    },
+    "crm_prd_info": {
+        "prd_id",
+        "prd_key",
+        "cat_id",
+        "prd_name",
+        "prd_cost",
+        "prd_line",
+        "prd_start_dt",
+        "prd_end_dt",
+    },
+    "crm_sales_details": {
+        "sales_ord_num",
+        "sales_prd_key",
+        "sales_cust_id",
+        "sales_order_date",
+        "sales_ship_date",
+        "sales_due_date",
+        "sales_sales",
+        "sales_quantity",
+        "sales_price",
+    },
+    "erp_cust_az12": {"cid", "birth_date_raw", "gender_raw"},
+    "erp_location_a101": {"cid", "country_name"},
+    "erp_px_cat_g1v2": {"id", "cat", "subcat", "maintenance_raw"},
+}
+
+>>>>>>> Stashed changes
 
 class TestSilverLayer:
     """Validate silver layer tables exist, have data, and are cleaner than bronze."""
@@ -134,7 +173,6 @@ class TestSilverLayer:
                 )
 
 
-
 #! 4) Gold layer tests
 
 GOLD_VIEWS = ["dim_customers", "dim_products", "fact_sales"]
@@ -163,12 +201,12 @@ class TestGoldLayer:
     def test_fact_sales_has_valid_keys(self, gold_engine):
         """All customer_key and product_key in fact_sales should be non-null."""
         with gold_engine.connect() as conn:
-            null_cust = conn.execute(text(
-                "SELECT COUNT(*) FROM fact_sales WHERE customer_key IS NULL"
-            )).scalar()
-            null_prod = conn.execute(text(
-                "SELECT COUNT(*) FROM fact_sales WHERE product_key IS NULL"
-            )).scalar()
+            null_cust = conn.execute(
+                text("SELECT COUNT(*) FROM fact_sales WHERE customer_key IS NULL")
+            ).scalar()
+            null_prod = conn.execute(
+                text("SELECT COUNT(*) FROM fact_sales WHERE product_key IS NULL")
+            ).scalar()
             # These are LEFT JOINs so some may be null —
             # warn but allow; fail only if ALL are null
             total = conn.execute(text("SELECT COUNT(*) FROM fact_sales")).scalar()
@@ -181,8 +219,8 @@ class TestGoldLayer:
                 print(f"WARNING: {null_prod} ({pct}%) rows have NULL product_key")
 
 
-
 #! 5) End-to-end data flow test
+
 
 class TestEndToEnd:
     """Verify data flows from raw CSV through all layers."""
@@ -205,7 +243,10 @@ class TestEndToEnd:
     def test_pipeline_config_valid(self):
         """Check pipeline_config.yaml is loadable and has expected keys."""
         import yaml
-        config_path = os.path.join(get_project_root(), "configs", "pipeline_config.yaml")
+
+        config_path = os.path.join(
+            get_project_root(), "configs", "pipeline_config.yaml"
+        )
         with open(config_path, "r") as f:
             cfg = yaml.safe_load(f)
         assert "bronze" in cfg, "pipeline_config.yaml missing 'bronze' section"

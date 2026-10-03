@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
+
 from src.core.database import get_engine
 from src.core.logger import setup_logger
 
@@ -60,6 +61,7 @@ Validates referential integrity between tables across layers,
 e.g. every sales_cust_id in sales should exist in customers.
 """
 
+
 def check_fk_integrity() -> list[dict]:
     """
     Run all FK integrity checks.
@@ -96,13 +98,15 @@ def check_fk_integrity() -> list[dict]:
                 sample = df[child_col].head(5).tolist() if not df.empty else []
 
                 status = "PASS" if orphan_count == 0 else "FAIL"
-                results.append({
-                    "rule": rule["name"],
-                    "layer": layer,
-                    "orphan_count": orphan_count,
-                    "sample_orphans": sample,
-                    "status": status,
-                })
+                results.append(
+                    {
+                        "rule": rule["name"],
+                        "layer": layer,
+                        "orphan_count": orphan_count,
+                        "sample_orphans": sample,
+                        "status": status,
+                    }
+                )
 
                 if status == "FAIL":
                     logger.warning(
@@ -113,12 +117,14 @@ def check_fk_integrity() -> list[dict]:
                     logger.info(f"[FK] {rule['name']} — PASS")
         except Exception as e:
             logger.error(f"[FK] Error on rule '{rule['name']}': {e}")
-            results.append({
-                "rule": rule["name"],
-                "layer": layer,
-                "status": "ERROR",
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "rule": rule["name"],
+                    "layer": layer,
+                    "status": "ERROR",
+                    "error": str(e),
+                }
+            )
 
     return results
 
@@ -128,9 +134,9 @@ def run_fk_integrity_report() -> bool:
     results = check_fk_integrity()
     all_pass = all(r["status"] == "PASS" for r in results)
 
-    print(f"\n{'='*60}")
-    print(f"  FOREIGN KEY INTEGRITY REPORT")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("  FOREIGN KEY INTEGRITY REPORT")
+    print(f"{'=' * 60}")
     for r in results:
         icon = "✓" if r["status"] == "PASS" else "✗"
         print(f"  {icon} {r['rule']}: {r['status']}")
@@ -139,9 +145,9 @@ def run_fk_integrity_report() -> bool:
             print(f"      Samples: {r.get('sample_orphans', [])}")
         elif r["status"] == "ERROR":
             print(f"      Error: {r.get('error')}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Overall: {'ALL PASSED' if all_pass else 'ISSUES FOUND'}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     return all_pass
 
 

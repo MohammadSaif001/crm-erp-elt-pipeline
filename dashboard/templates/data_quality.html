@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}ELT Pipeline Health — Data Quality{% endblock %}
+{% block section_code %}03 / DATA QUALITY{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="eyebrow">03 / DATA QUALITY</div>
+  <h1>DATA QUALITY</h1>
+  <p>Field validation, referential integrity, deduplication, and row-count checks for the current data estate.</p>
+</section>
+
+<!-- Section 01: Quality Score Overview -->
+<div class="section-heading">
+  <span>01 / QUALITY SCORE OVERVIEW</span>
+</div>
+
+<table class="report-table">
+  <tbody>
+    <tr>
+      <td style="width: 40%;"><b>Overall Quality Score</b></td>
+      <td style="width: 60%;"><b>{{ "%.1f"|format(dq.score) }}%</b></td>
+    </tr>
+    <tr>
+      <td><b>Total Checks Evaluated</b></td>
+      <td>{{ dq.total_checks }}</td>
+    </tr>
+    <tr>
+      <td><b>Passed Checks</b></td>
+      <td><span class="status-text-pass"><b>{{ dq.passed_checks }}</b></span></td>
+    </tr>
+    <tr>
+      <td><b>Warnings</b></td>
+      <td><b>{{ dq.warning_checks }}</b></td>
+    </tr>
+    <tr>
+      <td><b>Failed Checks</b></td>
+      <td><b>{{ dq.failed_checks }}</b></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 02: NULL Check Results -->
+<div class="section-heading">
+  <span>02 / NULL CHECK RESULTS</span>
+</div>
+
+{% if null_checks %}
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 40%;">Check Target</th>
+      <th style="width: 20%;">Total Rows</th>
+      <th style="width: 20%;">Null Violations</th>
+      <th style="width: 20%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in null_checks %}
+    <tr>
+      <td><b>{{ r.check_name }}</b></td>
+      <td>{{ r.total_rows | format_number }}</td>
+      <td>{{ r.failed_rows | format_number }}</td>
+      <td>{{ status_badge(r.status) | safe }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="report-note">No NULL check results available.</div>
+{% endif %}
+
+<!-- Section 03: Duplicate Check Results -->
+<div class="section-heading">
+  <span>03 / DUPLICATE CHECK RESULTS</span>
+</div>
+
+{% if duplicate_checks %}
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 50%;">Check Target</th>
+      <th style="width: 25%;">Duplicate Keys</th>
+      <th style="width: 25%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in duplicate_checks %}
+    <tr>
+      <td><b>{{ r.check_name }}</b></td>
+      <td>{{ r.duplicate_keys | format_number }}</td>
+      <td>{{ status_badge(r.status) | safe }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="report-note">No duplicate check results available.</div>
+{% endif %}
+
+<!-- Section 04: Foreign Key Integrity Results -->
+<div class="section-heading">
+  <span>04 / FOREIGN KEY INTEGRITY RESULTS</span>
+</div>
+
+{% if fk_checks %}
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 50%;">Relationship Check</th>
+      <th style="width: 25%;">Orphaned Rows</th>
+      <th style="width: 25%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in fk_checks %}
+    <tr>
+      <td><b>{{ r.check_name }}</b></td>
+      <td>{{ r.orphaned_rows | format_number }}</td>
+      <td>{{ status_badge(r.status) | safe }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="report-note">No foreign key check results available.</div>
+{% endif %}
+
+<!-- Section 05: Table Row Count Checks -->
+<div class="section-heading">
+  <span>05 / TABLE ROW COUNT CHECKS</span>
+</div>
+
+{% if row_count_checks %}
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 20%;">Layer</th>
+      <th style="width: 40%;">Table Name</th>
+      <th style="width: 20%;">Row Count</th>
+      <th style="width: 20%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in row_count_checks %}
+    <tr>
+      <td><b>{{ r.layer }}</b></td>
+      <td><code>{{ r.table }}</code></td>
+      <td>{{ r.row_count | format_number }}</td>
+      <td>{{ status_badge(r.status) | safe }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="report-note">No row count check results available.</div>
+{% endif %}
+
+<!-- Section 06: Action Items Block -->
+{% if dq.failed_checks > 0 or dq.warning_checks > 0 %}
+<div class="section-heading"><span>06 / RECOMMENDED ACTION</span></div>
+<div class="action-box action-box--warning">
+  <b>Attention required.</b><br>
+  Review the failing rows above before the next production execution. The displayed counts are queried from the current report.
+</div>
+{% endif %}
+
+{% endblock %}
