@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
+
 from src.core.database import get_engine
 from src.core.logger import setup_logger
 
@@ -27,6 +28,7 @@ DQ Check: Null / Missing Value Detection
 Checks for unexpected NULLs in critical (NOT NULL) columns.
 """
 
+
 def check_nulls(layer: str = "silver") -> dict:
     """
     Check for NULL values in critical columns.
@@ -47,15 +49,19 @@ def check_nulls(layer: str = "silver") -> dict:
         try:
             with engine.connect() as conn:
                 for col in columns:
-                    query = text(f"SELECT COUNT(*) AS null_count FROM {table} WHERE {col} IS NULL")
+                    query = text(
+                        f"SELECT COUNT(*) AS null_count FROM {table} WHERE {col} IS NULL"
+                    )
                     df = pd.read_sql(query, conn)
                     null_count = int(df["null_count"].iloc[0])
                     status = "PASS" if null_count == 0 else "FAIL"
-                    table_results.append({
-                        "column": col,
-                        "null_count": null_count,
-                        "status": status,
-                    })
+                    table_results.append(
+                        {
+                            "column": col,
+                            "null_count": null_count,
+                            "status": status,
+                        }
+                    )
                     if status == "FAIL":
                         logger.warning(
                             f"[NULLS] {layer}.{table}.{col} has {null_count} NULL values"
@@ -74,9 +80,9 @@ def run_null_checks(layer: str = "silver") -> bool:
     results = check_nulls(layer)
     all_pass = True
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  NULL CHECK REPORT — {layer.upper()} LAYER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for table, checks in results.items():
         fails = [c for c in checks if c["status"] == "FAIL"]
         if fails:
@@ -86,9 +92,9 @@ def run_null_checks(layer: str = "silver") -> bool:
                 print(f"      {f['column']}: {f['null_count']} NULLs")
         else:
             print(f"  ✓ {table}: PASS (no unexpected NULLs)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Overall: {'ALL PASSED' if all_pass else 'ISSUES FOUND'}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     return all_pass
 
 

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}ELT Pipeline Health — Technical Details{% endblock %}
+{% block section_code %}05 / TECHNICAL DETAILS{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="eyebrow">05 / TECHNICAL DETAILS</div>
+  <h1>SYSTEM ENVIRONMENT &amp; LOGS</h1>
+  <p>A detailed operational view of the ELT runtime, database connections, configuration, and execution log.</p>
+</section>
+
+<!-- Section 01: System Environment Table -->
+<div class="section-heading">
+  <span>01 / SYSTEM ENVIRONMENT</span>
+</div>
+
+<table class="report-table">
+  <tbody>
+    <tr>
+      <td style="width: 35%;"><b>Pipeline Log File Path</b></td>
+      <td style="width: 65%;"><code>{{ app_settings.log_file_path }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Database Host</b></td>
+      <td><code>{{ db_settings.host }}:{{ db_settings.port }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Bronze Database</b></td>
+      <td><code>{{ db_settings.bronze_db }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Silver Database</b></td>
+      <td><code>{{ db_settings.silver_db }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Gold Database</b></td>
+      <td><code>{{ db_settings.gold_db }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Dashboard Cache TTL</b></td>
+      <td>{{ app_settings.cache_ttl_seconds }} seconds</td>
+    </tr>
+    <tr>
+      <td><b>Maximum Log Lines Parsed</b></td>
+      <td>{{ app_settings.max_log_lines }} lines</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 02: Log File Viewer with Level Filter -->
+<div class="section-heading">
+  <span>02 / PIPELINE LOG</span>
+  <p class="section-note">Filter the parsed operational events without changing the original log file.</p>
+</div>
+
+<div class="log-summary">
+  <span>{{ level_counts.INFO }} INFO EVENTS</span>
+  <span>{{ level_counts.WARNING }} WARNING EVENTS</span>
+  <span>{{ level_counts.ERROR }} ERROR EVENTS</span>
+  <span>{{ total_records }} TOTAL RECORDS</span>
+</div>
+
+<form method="GET" action="/technical-details" style="margin: 10px 0;">
+  <label for="filter_level" style="font-size: 12px; font-weight: bold; margin-right: 8px;">Filter Log Level:</label>
+  <select id="filter_level" name="level" class="log-filter-select" onchange="this.form.submit()">
+    <option value="ALL" {% if filter_level == 'ALL' %}selected{% endif %}>ALL</option>
+    <option value="INFO" {% if filter_level == 'INFO' %}selected{% endif %}>INFO</option>
+    <option value="WARNING" {% if filter_level == 'WARNING' %}selected{% endif %}>WARNING</option>
+    <option value="ERROR" {% if filter_level == 'ERROR' %}selected{% endif %}>ERROR</option>
+  </select>
+</form>
+
+<div class="log-box">{{ log_text }}</div>
+
+<!-- Section 03: Gold Schema Map Definition -->
+<div class="section-heading" style="margin-top: 30px;">
+  <span>03 / GOLD SCHEMA DEFINITION MAP</span>
+  <p class="section-note">Star Schema Table &amp; Column Mapping Configuration.</p>
+</div>
+
+<details class="report-expander" open>
+  <summary>GOLD SCHEMA DEFINITION MAP (Click to expand / collapse)</summary>
+  <div class="expander-content">
+    {% for view_name, schema in gold_schema.items() %}
+      <div style="margin-bottom: 18px;">
+        <b>{{ view_name }}</b> ({{ schema.columns | length }} columns):
+        <pre>{% for label, col in schema.columns.items() %}{{ "%-18s"|format(label) }} &rarr; {{ col }}
+{% endfor %}</pre>
+      </div>
+    {% endfor %}
+  </div>
+</details>
+
+{% endblock %}

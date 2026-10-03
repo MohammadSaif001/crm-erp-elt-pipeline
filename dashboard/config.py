@@ -1,8 +1,36 @@
+"""
+config.py
+==============================================================================
+Central configuration for the ELT Data Engineering Pipeline Dashboard.
+
+Reads MySQL connection details from environment variables (falls back to the
+same defaults used by the pipeline's `configs/db_config.json`) and exposes a
+single `Settings` object used throughout the app.
+
+SCHEMA ASSUMPTION NOTICE
+--------------------------------------------------------------------------
+The upstream pipeline repository (rashid-dsai/elt-data-engineering-pipeline)
+documents the Gold layer as three views with a fixed column COUNT but does
+not publish the literal `CREATE VIEW` SQL in its README. Column names below
+are INFERRED from the repository's documented naming conventions (e.g.
+`cst_id`, `prd_key`, `sls_*` prefixes, FK integrity rules) and are marked
+with `# ASSUMED` wherever they are not verbatim from the README. If your
+actual view definitions differ, update `GOLD_SCHEMA` below — every query in
+`database/queries.py` is written against these names, in one place, so a
+schema change only requires editing this file.
+--------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
+
 import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 def _load_local_database_config() -> dict[str, object]:
@@ -20,7 +48,9 @@ def _load_local_database_config() -> dict[str, object]:
 _LOCAL_DB_CONFIG = _load_local_database_config()
 
 
-def _database_setting(environment_name: str, config_name: str, default: str | None = None) -> str:
+def _database_setting(
+    environment_name: str, config_name: str, default: str | None = None
+) -> str:
     value = os.getenv(environment_name) or _LOCAL_DB_CONFIG.get(config_name) or default
     if value is None:
         raise RuntimeError(
@@ -28,7 +58,6 @@ def _database_setting(environment_name: str, config_name: str, default: str | No
             "configs/db_config.json does not provide a value"
         )
     return str(value)
-
 
 
 @dataclass(frozen=True)
@@ -65,46 +94,46 @@ GOLD_SCHEMA = {
     "dim_customers": {
         "table": "dim_customers",
         "columns": {
-            "customer_key": "customer_key",        # ASSUMED surrogate key (ROW_NUMBER())
-            "customer_id": "customer_id",           # Gold view alias
-            "customer_number": "customer_number",   # Gold view alias
-            "first_name": "first_name",             # ASSUMED
-            "last_name": "last_name",               # ASSUMED
-            "marital_status": "marital_status",     # documented (standardized)
-            "gender": "gender",                     # documented (CRM primary, ERP fallback)
-            "birthdate": "birthday",                 # from ERP CUST_AZ12.BDATE
-            "country": "country",                    # documented (from ERP LOC_A101)
-            "create_date": "create_date",             # ASSUMED (CRM cst_create_date)
+            "customer_key": "customer_key",  # ASSUMED surrogate key (ROW_NUMBER())
+            "customer_id": "customer_id",  # Gold view alias
+            "customer_number": "customer_number",  # Gold view alias
+            "first_name": "first_name",  # ASSUMED
+            "last_name": "last_name",  # ASSUMED
+            "marital_status": "marital_status",  # documented (standardized)
+            "gender": "gender",  # documented (CRM primary, ERP fallback)
+            "birthdate": "birthday",  # from ERP CUST_AZ12.BDATE
+            "country": "country",  # documented (from ERP LOC_A101)
+            "create_date": "create_date",  # ASSUMED (CRM cst_create_date)
         },
     },
     "dim_products": {
         "table": "dim_products",
         "columns": {
-            "product_key": "product_key",           # ASSUMED surrogate key (ROW_NUMBER())
-            "product_id": "product_id",               # Gold view alias
-            "product_number": "product_number",       # Gold view alias
-            "product_name": "product_name",           # ASSUMED (from prd_nm)
-            "category_id": "category_id",             # documented (extracted from prd_key)
-            "category": "category_name",              # from ERP CAT
-            "subcategory": "subcategory_name",        # from ERP SUBCAT
-            "maintenance": "maintenance",             # documented (ERP MAINTENANCE)
-            "cost": "product_cost",                   # from prd_cost
-            "product_line": "product_line",           # documented (Road/Mountain/Touring/Other)
-            "start_date": "product_start_date",       # from prd_start_dt
+            "product_key": "product_key",  # ASSUMED surrogate key (ROW_NUMBER())
+            "product_id": "product_id",  # Gold view alias
+            "product_number": "product_number",  # Gold view alias
+            "product_name": "product_name",  # ASSUMED (from prd_nm)
+            "category_id": "category_id",  # documented (extracted from prd_key)
+            "category": "category_name",  # from ERP CAT
+            "subcategory": "subcategory_name",  # from ERP SUBCAT
+            "maintenance": "maintenance",  # documented (ERP MAINTENANCE)
+            "cost": "product_cost",  # from prd_cost
+            "product_line": "product_line",  # documented (Road/Mountain/Touring/Other)
+            "start_date": "product_start_date",  # from prd_start_dt
         },
     },
     "fact_sales": {
         "table": "fact_sales",
         "columns": {
-            "order_number": "order_number",           # documented
-            "product_key": "product_key",             # documented (FK -> dim_products)
-            "customer_key": "customer_key",           # documented (FK -> dim_customers)
-            "order_date": "order_date",               # documented
-            "shipping_date": "shipping_date",         # documented
-            "due_date": "due_date",                   # documented
-            "sales_amount": "sales_amount",           # documented
-            "quantity": "quantity",                    # documented
-            "price": "price",                          # documented
+            "order_number": "order_number",  # documented
+            "product_key": "product_key",  # documented (FK -> dim_products)
+            "customer_key": "customer_key",  # documented (FK -> dim_customers)
+            "order_date": "order_date",  # documented
+            "shipping_date": "shipping_date",  # documented
+            "due_date": "due_date",  # documented
+            "sales_amount": "sales_amount",  # documented
+            "quantity": "quantity",  # documented
+            "price": "price",  # documented
         },
     },
 }
@@ -121,7 +150,9 @@ def _resolve_log_path() -> str:
         base_dir / "data" / "logs" / "pipeline.log",
         Path("data/logs/pipeline.log"),
         Path("../data/logs/pipeline.log"),
-        Path("/home/mohammadsaif/Projects/data_engineering_project/data/logs/pipeline.log"),
+        Path(
+            "/home/mohammadsaif/Projects/data_engineering_project/data/logs/pipeline.log"
+        ),
     ]
     for c in candidates:
         if c.exists():
@@ -141,15 +172,15 @@ class AppSettings:
     layout: str = "wide"
     theme: str = "light"
     cache_ttl_seconds: int = 300  # 5 minutes — balances freshness vs DB load
-    logo_path: str = "assets/logo.png"
-    styles_path: str = "assets/styles.css"
+    logo_path: str = str(Path(__file__).resolve().parent / "assets" / "logo.png")
+    styles_path: str = str(Path(__file__).resolve().parent / "assets" / "styles.css")
     log_file_path: str = field(default_factory=_resolve_log_path)
     max_log_lines: int = 800
 
-    accent_color: str = "#000080"       # dark navy
-    success_color: str = "#008000"      # green
-    warning_color: str = "#B8860B"      # amber / goldenrod
-    danger_color: str = "#CC0000"       # red
+    accent_color: str = "#000080"  # dark navy
+    success_color: str = "#008000"  # green
+    warning_color: str = "#B8860B"  # amber / goldenrod
+    danger_color: str = "#CC0000"  # red
     bg_primary: str = "#FFFFFF"
     bg_secondary: str = "#F4F4F6"
     bg_card: str = "#FFFFFF"
