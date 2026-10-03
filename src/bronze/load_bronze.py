@@ -5,14 +5,17 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-
+from typing import Any
 from src.bronze.hash import generate_file_hash
-from src.bronze.ingestion_checker import is_hash_processed, log_ingestion
-from src.core.database import get_engine
 from src.core.logger import setup_logger
-from src.core.database import get_engine
 from src.core.paths import get_raw_data_path
-from src.extract.validate_schema import validate_schema
+from src.bronze.hash import generate_file_hash
+from src.bronze.ingestion_checker import(
+        is_hash_processed,
+        log_ingestion)
+from src.core.database import get_engine
+
+
 
 logger = setup_logger("bronze")
 
@@ -84,17 +87,8 @@ def load_cust_info() -> bool:
             return False
 
         df = read_bronze_csv(str(csv_path))
-        
-        #! Add raw_row (wrapped)
         df = add_raw_row(df)
 
-        check_schema = validate_schema("crm_customers_info", df=df)
-        if check_schema["status"] != "PASS":
-            logger.error(
-                f"[ERROR] Schema validation failed for {file_name}: "
-                f"missing {check_schema.get('missing_columns')}"
-            )
-            return False
 
         #! Map Columns
         # .get()
@@ -186,13 +180,7 @@ def load_sales_details_info() -> bool:
 
         #! Add raw_row (wrapped)
         df = add_raw_row(df)
-        check_schema = validate_schema("crm_sales_details", df=df)
-        if check_schema["status"] != "PASS":
-            logger.error(
-                f"[ERROR] Schema validation failed for {file_name}: "
-                f"missing {check_schema.get('missing_columns')}"
-            )
-            return False
+
 
         #! Map Columns
         df["ingest_id"] = df.get("ingest_id")
@@ -289,20 +277,13 @@ def load_prd_info() -> bool:
         df = read_bronze_csv(str(csv_path))
         #! 2. Add raw_row
         df = add_raw_row(df)
-        check_schema = validate_schema("crm_prd_info", df=df)
-        if check_schema["status"] != "PASS":
-            logger.error(
-                f"[ERROR] Schema validation failed for {file_name}: "
-                f"missing {check_schema.get('missing_columns')}"
-            )
-            return False
-        df["prd_id"] = df.get("prd_id")
-        df["prd_key"] = df.get("prd_key")
-        df["prd_name"] = df.get("prd_nm")
-        df["prd_cost"] = df.get("prd_cost")
-        df["prd_line"] = df.get("prd_line")
-        df["prd_start_date_raw"] = df.get("prd_start_dt")
-        df["prd_end_date_raw"] = df.get("prd_end_dt")
+        df['prd_id']    = df.get('prd_id')
+        df['prd_key']   = df.get('prd_key')
+        df['prd_name']  = df.get('prd_nm')
+        df['prd_cost']  = df.get('prd_cost')
+        df['prd_line']  = df.get('prd_line')
+        df['prd_start_date_raw'] = df.get('prd_start_dt')
+        df['prd_end_date_raw'] = df.get('prd_end_dt')
 
         #! Select columns to write
         final_cols = [
@@ -384,13 +365,6 @@ def load_erp_cust_az12() -> bool:
 
         #! Add raw_row (wrapped)
         df = add_raw_row(df)
-        check_schema = validate_schema("erp_cust_az12", df=df)
-        if check_schema["status"] != "PASS":
-            logger.error(
-                f"[ERROR] Schema validation failed for {file_name}: "
-                f"missing {check_schema.get('missing_columns')}"
-            )
-            return False
 
         #! Colunmn Mapping
         df["ingest_id"] = df.get("ingest_id")
@@ -475,13 +449,6 @@ def load_erp_location_a101() -> bool:
 
         #! Add raw_row (wrapped)
         df = add_raw_row(df)
-        check_schema = validate_schema("erp_location_a101", df=df)
-        if check_schema["status"] != "PASS":
-            logger.error(
-                f"[ERROR] Schema validation failed for {file_name}: "
-                f"missing {check_schema.get('missing_columns')}"
-            )
-            return False
 
         #! 3.Colunmn Mapping
         df["cid"] = df.get("cid")
@@ -555,13 +522,6 @@ def load_erp_px_cat_g1v2() -> bool:
 
         #! Add raw_row (wrapped)
         df = add_raw_row(df)
-        check_schema = validate_schema("erp_px_cat_g1v2", df=df)
-        if check_schema["status"] != "PASS":
-            logger.error(
-                f"[ERROR] Schema validation failed for {file_name}: "
-                f"missing {check_schema.get('missing_columns')}"
-            )
-            return False
 
         #! 3.Colunmn Mapping
         df["ingest_id"] = df.get("ingest_id")

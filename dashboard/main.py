@@ -10,7 +10,6 @@ BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from components.pipeline_status import compute_overall_pipeline_status
 from config import APP_SETTINGS, DB_SETTINGS, GOLD_SCHEMA
 from database.connection import test_connection
 from database.queries import (
@@ -23,6 +22,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from utils.cache import bump_last_refresh, clear_all_caches, get_last_refresh_key
+from utils.health import compute_overall_pipeline_status
 from utils.helpers import (
     format_currency,
     format_duration,

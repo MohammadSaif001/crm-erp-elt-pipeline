@@ -1,14 +1,16 @@
-"""Compatibility import for the FastAPI dashboard application."""
+"""FastAPI entry point for the dashboard."""
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+if __package__:
+    from .main import app
+else:  # Support launches from inside the dashboard directory.
+    import sys
+    from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.insert(0, str(BASE_DIR))
-
-from main import app
+    dashboard_dir = Path(__file__).resolve().parent
+    if str(dashboard_dir) not in sys.path:
+        sys.path.insert(0, str(dashboard_dir))
+    from main import app
 
 __all__ = ["app"]

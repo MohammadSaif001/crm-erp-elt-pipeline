@@ -1,10 +1,3 @@
-"""
-utils/helpers.py
-==============================================================================
-General-purpose formatting, human-readable language converters, and
-log-parsing helpers for the ELT Pipeline Health Report.
-"""
-
 from __future__ import annotations
 
 import logging
