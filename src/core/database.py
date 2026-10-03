@@ -1,12 +1,9 @@
 import json
 import logging
-<<<<<<< Updated upstream
-=======
 import os
 from urllib.parse import quote_plus
 
 import pandas as pd
->>>>>>> Stashed changes
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
@@ -19,12 +16,6 @@ def load_config():
    
     config_path = get_config_path()
     rel_config_path = os.path.relpath(config_path, get_project_root())
-<<<<<<< Updated upstream
-    
-    
-=======
-
->>>>>>> Stashed changes
     logging.info(f"Loading config from: {rel_config_path}")
 
     with open(config_path, "r") as file:
@@ -37,19 +28,11 @@ def _create_database(cfg: dict, dbname: str) -> None:
     Uses admin connection (no database specified).
     """
     try:
-<<<<<<< Updated upstream
-        user = cfg['user']
-        pwd = cfg['password']
-        host = cfg['host']
-        port = cfg.get('port', 3306)
-        
-=======
         user = cfg["user"]
         pwd = cfg["password"]
         host = cfg["host"]
         port = cfg.get("port", 3306)
 
->>>>>>> Stashed changes
         pwd_quoted = quote_plus(pwd)
         # Admin connection without specifying a database
         admin_url = f"mysql+pymysql://{user}:{pwd_quoted}@{host}:{port}/"
@@ -77,15 +60,6 @@ def get_engine(layer="bronze"):
     if "mysql" not in full_config:
         raise KeyError("'mysql' section missing in db_config.json")
 
-<<<<<<< Updated upstream
-    cfg = full_config['mysql']
-    
-    user = cfg['user']
-    pwd = cfg['password']
-    host = cfg['host']
-    port = cfg.get('port', 3306)
-    
-=======
     cfg = full_config["mysql"]
 
     user = cfg["user"]
@@ -93,7 +67,6 @@ def get_engine(layer="bronze"):
     host = cfg["host"]
     port = cfg.get("port", 3306)
 
->>>>>>> Stashed changes
     db_map = {
         "bronze": cfg["bronze_db"],
         "silver": cfg["silver_db"],
@@ -117,13 +90,6 @@ def get_engine(layer="bronze"):
         
         logger.info(f"Connected to {layer} database: {dbname}")
         return engine
-<<<<<<< Updated upstream
-        
-    except OperationalError as e:
-        # Database likely doesn't exist
-        logger.warning(f"Database '{dbname}' not found or connection failed. Attempting to create...")
-        
-=======
 
     except OperationalError:
         # Database likely doesn't exist
@@ -131,7 +97,6 @@ def get_engine(layer="bronze"):
             f"Database '{dbname}' not found or connection failed. Attempting to create..."
         )
 
->>>>>>> Stashed changes
         try:
             # Create the database
             _create_database(cfg, dbname)
@@ -140,22 +105,13 @@ def get_engine(layer="bronze"):
             engine = create_engine(url, pool_pre_ping=True)
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
-<<<<<<< Updated upstream
-            
-            logger.info(f"Successfully connected to newly created {layer} database: {dbname}")
-=======
 
             logger.info(
                 f"Successfully connected to newly created {layer} database: {dbname}"
             )
->>>>>>> Stashed changes
             return engine
             
         except Exception as create_error:
-<<<<<<< Updated upstream
-            logger.error(f"Failed to create and connect to database '{dbname}': {create_error}")
-            raise
-=======
             logger.error(
                 f"Failed to create and connect to database '{dbname}': {create_error}"
             )
@@ -191,4 +147,3 @@ def load_to_silver(
     except IntegrityError as e:
         logger.error(f"[SILVER LOAD] '{table_name}' violated a DB constraint: {e}")
         raise
->>>>>>> Stashed changes

@@ -1,21 +1,8 @@
 import pandas as pd
-<<<<<<< Updated upstream
-from src.core.database import get_engine
-=======
 from sqlalchemy import Date, DateTime, Integer, Numeric, String
 
-from src.core.database import get_engine, load_to_silver
->>>>>>> Stashed changes
+from src.core.database import get_engine
 from src.core.logger import setup_logger
-
-# # Setup path for module imports
-# _current_file = Path(__file__).resolve()
-# _python_root = _current_file.parents[2]  # Navigate: crm → silver → python
-
-# if str(_python_root) not in sys.path:
-#     sys.path.insert(0, str(_python_root))
-
-# from utils.db_connection import get_engine
 
 logger = setup_logger(__name__.split(".")[-1])
 
@@ -180,8 +167,6 @@ def run_sales_pipeline(table_name: str) -> None:
 
     valid_df = clean_sales_data(valid_df)
     valid_df = valid_df.drop(columns=["ingest_id"], errors="ignore")
-<<<<<<< Updated upstream
-=======
     before = len(valid_df)
     valid_df = valid_df.drop_duplicates(
         subset=["sales_ord_num", "sales_prd_key"], keep="last"
@@ -190,7 +175,6 @@ def run_sales_pipeline(table_name: str) -> None:
         logger.warning(
             "[DEDUP] Removed %s duplicate sales rows", before - len(valid_df)
         )
->>>>>>> Stashed changes
 
     valid_df = valid_df.rename(
         columns={
@@ -207,21 +191,6 @@ def run_sales_pipeline(table_name: str) -> None:
         if_exists = "replace",
         index=False,
         dtype={
-<<<<<<< Updated upstream
-            "sales_ord_num"       : String(100),
-            "sales_prd_key"       : String(100),
-            "sales_cust_id"       : String(50),
-            "sales_sales"         : Numeric(12,2),
-            "sales_quantity"      : Integer(),
-            "sales_price"         : Numeric(12,2),
-            "sales_order_date"    : Date(),
-            "sales_ship_date"     : Date(),
-            "sales_due_date"      : Date(),
-            "loaded_at"           : DateTime()
-         }, # type: ignore
-         chunksize=1000
-         )
-=======
             "sales_ord_num": String(100),
             "sales_prd_key": String(100),
             "sales_cust_id": String(50),
@@ -237,6 +206,5 @@ def run_sales_pipeline(table_name: str) -> None:
     )
 
 
->>>>>>> Stashed changes
 if __name__ == "__main__":
     run_sales_pipeline("crm_sales_details")

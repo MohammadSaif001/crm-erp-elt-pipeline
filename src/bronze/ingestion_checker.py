@@ -1,18 +1,8 @@
-import os
 import logging
-<<<<<<< Updated upstream
-import pandas as pd
-from sqlalchemy  import text
-=======
 
 from sqlalchemy import text
->>>>>>> Stashed changes
 
 logger = logging.getLogger(__name__)
-
-
-
-
 
 def is_hash_processed(engine, file_hash):
 

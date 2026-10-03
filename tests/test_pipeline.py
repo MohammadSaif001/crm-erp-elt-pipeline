@@ -17,6 +17,8 @@ from sqlalchemy import inspect, text
 from src.core.database import get_engine
 from src.core.paths import get_project_root
 
+pytestmark = pytest.mark.integration
+
 #! Fixtures
 
 
@@ -95,45 +97,6 @@ SILVER_TABLES = [
     "erp_px_cat_g1v2",
 ]
 
-<<<<<<< Updated upstream
-=======
-SILVER_SCHEMA = {
-    "crm_customers_info": {
-        "cst_id",
-        "cst_key",
-        "cst_firstname",
-        "cst_lastname",
-        "cst_marital_status",
-        "cst_gender",
-        "cst_create_date",
-    },
-    "crm_prd_info": {
-        "prd_id",
-        "prd_key",
-        "cat_id",
-        "prd_name",
-        "prd_cost",
-        "prd_line",
-        "prd_start_dt",
-        "prd_end_dt",
-    },
-    "crm_sales_details": {
-        "sales_ord_num",
-        "sales_prd_key",
-        "sales_cust_id",
-        "sales_order_date",
-        "sales_ship_date",
-        "sales_due_date",
-        "sales_sales",
-        "sales_quantity",
-        "sales_price",
-    },
-    "erp_cust_az12": {"cid", "birth_date_raw", "gender_raw"},
-    "erp_location_a101": {"cid", "country_name"},
-    "erp_px_cat_g1v2": {"id", "cat", "subcat", "maintenance_raw"},
-}
-
->>>>>>> Stashed changes
 
 class TestSilverLayer:
     """Validate silver layer tables exist, have data, and are cleaner than bronze."""

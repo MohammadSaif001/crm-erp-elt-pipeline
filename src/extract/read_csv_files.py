@@ -1,12 +1,3 @@
-"""
-Extract Module: CSV File Reader
---------------------------------
-Centralized CSV reading functions for the extract layer.
-Reads raw source files from data/raw/ with consistent settings.
-
-Usage:
-    from extract.read_csv_files import read_all_sources, read_source_file
-"""
 import os
 import pandas as pd
 from src.core.config import load_pipeline_config

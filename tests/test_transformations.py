@@ -59,18 +59,12 @@ from src.silver.crm.crm_sales import (
     normalize_data as sales_normalize,
 )
 from src.silver.erp.erp_customers import (
-<<<<<<< Updated upstream
     standardize_customer_id,
-=======
->>>>>>> Stashed changes
     apply_value_replacements,
     customer_replacemts,
     location_replacements,
-<<<<<<< Updated upstream
-=======
     standardize_customer_id,
     transform_erp_cid_column,
->>>>>>> Stashed changes
 )
 
 
@@ -79,18 +73,6 @@ from src.silver.erp.erp_customers import (
 # ==========================================================================
 def _make_customer_df():
     """Minimal customer dataframe mimicking bronze output."""
-<<<<<<< Updated upstream
-    return pd.DataFrame({
-        "raw_row": ['{"a":1}', '{"b":2}', '{"c":3}'],
-        "cst_id": ["1", "2", "3"],
-        "cst_key": ["AW00011000", "AW00011001", "AW00011002"],
-        "cst_firstname": ["  john  ", "  JANE  ", "  bob  "],
-        "cst_lastname": ["  doe  ", "  SMITH  ", "  jones  "],
-        "cst_marital_status": ["m", "s", "m"],
-        "cst_gndr": ["M", "F", "M"],
-        "cst_create_date_raw": ["2024-01-01", "2024-02-15", "2024-03-20"],
-    })
-=======
     return pd.DataFrame(
         {
             "raw_row": ['{"a":1}', '{"b":2}', '{"c":3}'],
@@ -104,7 +86,6 @@ def _make_customer_df():
             "cst_create_date_raw": ["2024-01-01", "2024-02-15", "2024-03-20"],
         }
     )
->>>>>>> Stashed changes
 
 
 def _make_product_df():
@@ -211,8 +192,6 @@ class TestCustomerStandardize:
         df = pd.DataFrame(columns=["cst_gndr", "cst_marital_status"])
         result = cust_standardize(df)
         assert result.empty
-<<<<<<< Updated upstream
-=======
 
     def test_unrecognized_gender_is_preserved(self):
         df = _make_customer_df()
@@ -229,7 +208,6 @@ class TestBronzeSchemaValidation:
         result = validate_schema("crm_customers_info", df)
         assert result["status"] == "FAIL"
         assert "cst_gndr" in result["missing_columns"]
->>>>>>> Stashed changes
 
 
 class TestDeduplicateLatestByDate:

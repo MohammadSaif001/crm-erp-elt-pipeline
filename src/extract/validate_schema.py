@@ -13,10 +13,10 @@ import pandas as pd
 from src.core.logger import setup_logger
 from src.extract.read_csv_files import read_source_file
 
+from src.core.paths import get_raw_data_path
+
 logger = setup_logger(__name__.split(".")[-1])
 
-<<<<<<< Updated upstream
-=======
 
 def _read_source_file(source_folder: str, file_name: str) -> pd.DataFrame:
     """Read a source file only when validation is invoked without a dataframe."""
@@ -28,7 +28,6 @@ def _read_source_file(source_folder: str, file_name: str) -> pd.DataFrame:
     return df
 
 
->>>>>>> Stashed changes
 # Expected columns per source table (after header normalization: stripped + lowered).
 # These match what the bronze layer expects.
 EXPECTED_SCHEMAS = {
@@ -49,10 +48,6 @@ EXPECTED_SCHEMAS = {
         "source": "source_crm",
         "file_name": "prd_info.csv",
         "required_columns": [
-<<<<<<< Updated upstream
-            "prd_id", "prd_key", "prd_name", "prd_cost",
-            "prd_line", "prd_start_date", "prd_end_date",
-=======
             "prd_id",
             "prd_key",
             "prd_nm",
@@ -60,18 +55,12 @@ EXPECTED_SCHEMAS = {
             "prd_line",
             "prd_start_dt",
             "prd_end_dt",
->>>>>>> Stashed changes
         ],
     },
     "crm_sales_details": {
         "source": "source_crm",
         "file_name": "sales_details.csv",
         "required_columns": [
-<<<<<<< Updated upstream
-            "sls_ord_num", "sls_prd_key", "sls_cust_id",
-            "sls_order_date", "sls_ship_date", "sls_due_date",
-            "sls_sales", "sls_quantity", "sls_price",
-=======
             "sls_ord_num",
             "sls_prd_key",
             "sls_cust_id",
@@ -81,7 +70,6 @@ EXPECTED_SCHEMAS = {
             "sls_sales",
             "sls_quantity",
             "sls_price",
->>>>>>> Stashed changes
         ],
     },
     "erp_cust_az12": {

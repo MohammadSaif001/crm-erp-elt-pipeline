@@ -13,10 +13,7 @@ crashing the app.
 from __future__ import annotations
 
 import logging
-<<<<<<< Updated upstream
-=======
 from functools import cache
->>>>>>> Stashed changes
 
 import pandas as pd
 from config import DB_SETTINGS

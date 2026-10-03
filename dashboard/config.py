@@ -23,10 +23,7 @@ schema change only requires editing this file.
 
 from __future__ import annotations
 
-<<<<<<< Updated upstream
-=======
 import json
->>>>>>> Stashed changes
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,8 +33,6 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
-<<<<<<< Updated upstream
-=======
 def _load_local_database_config() -> dict[str, object]:
     """Load the untracked pipeline DB config for local dashboard development."""
     config_path = Path(__file__).resolve().parent.parent / "configs" / "db_config.json"
@@ -64,19 +59,18 @@ def _database_setting(
         )
     return str(value)
 
->>>>>>> Stashed changes
 
 @dataclass(frozen=True)
 class DatabaseSettings:
     """MySQL connection settings for the Gold layer database."""
 
-    host: str = os.getenv("DB_HOST", "localhost")
-    port: int = int(os.getenv("DB_PORT", "3306"))
-    user: str = os.getenv("DB_USER", "root")
-    password: str = os.getenv("DB_PASSWORD", "841506")
-    gold_db: str = os.getenv("GOLD_DB", "gold_db")
-    silver_db: str = os.getenv("SILVER_DB", "silver_db")
-    bronze_db: str = os.getenv("BRONZE_DB", "bronze_db")
+    host: str = _database_setting("DB_HOST", "host", "localhost")
+    port: int = int(_database_setting("DB_PORT", "port", "3306"))
+    user: str = _database_setting("DB_USER", "user", "root")
+    password: str = _database_setting("DB_PASSWORD", "password")
+    gold_db: str = _database_setting("GOLD_DB", "gold_db", "gold_db")
+    silver_db: str = _database_setting("SILVER_DB", "silver_db", "silver_db")
+    bronze_db: str = _database_setting("BRONZE_DB", "bronze_db", "bronze_db")
     connect_timeout: int = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
     pool_size: int = int(os.getenv("DB_POOL_SIZE", "5"))
     pool_recycle: int = int(os.getenv("DB_POOL_RECYCLE", "3600"))
@@ -100,18 +94,6 @@ GOLD_SCHEMA = {
     "dim_customers": {
         "table": "dim_customers",
         "columns": {
-<<<<<<< Updated upstream
-            "customer_key": "customer_key",        # ASSUMED surrogate key (ROW_NUMBER())
-            "customer_id": "cst_id",                # documented (CRM source)
-            "customer_number": "cst_key",           # documented (CRM source, join key)
-            "first_name": "first_name",             # ASSUMED
-            "last_name": "last_name",               # ASSUMED
-            "marital_status": "marital_status",     # documented (standardized)
-            "gender": "gender",                     # documented (CRM primary, ERP fallback)
-            "birthdate": "birthdate",                # ASSUMED (from ERP CUST_AZ12.BDATE)
-            "country": "country",                    # documented (from ERP LOC_A101)
-            "create_date": "create_date",             # ASSUMED (CRM cst_create_date)
-=======
             "customer_key": "customer_key",  # ASSUMED surrogate key (ROW_NUMBER())
             "customer_id": "customer_id",  # Gold view alias
             "customer_number": "customer_number",  # Gold view alias
@@ -122,25 +104,11 @@ GOLD_SCHEMA = {
             "birthdate": "birthday",  # from ERP CUST_AZ12.BDATE
             "country": "country",  # documented (from ERP LOC_A101)
             "create_date": "create_date",  # ASSUMED (CRM cst_create_date)
->>>>>>> Stashed changes
         },
     },
     "dim_products": {
         "table": "dim_products",
         "columns": {
-<<<<<<< Updated upstream
-            "product_key": "product_key",           # ASSUMED surrogate key (ROW_NUMBER())
-            "product_id": "prd_id",                  # documented (CRM source)
-            "product_number": "prd_key",              # documented (CRM source, join key)
-            "product_name": "product_name",           # ASSUMED (from prd_nm)
-            "category_id": "category_id",             # documented (extracted from prd_key)
-            "category": "category",                   # documented (ERP CAT)
-            "subcategory": "subcategory",             # documented (ERP SUBCAT)
-            "maintenance": "maintenance",             # documented (ERP MAINTENANCE)
-            "cost": "cost",                            # ASSUMED (from prd_cost)
-            "product_line": "product_line",           # documented (Road/Mountain/Touring/Other)
-            "start_date": "start_date",               # ASSUMED (from prd_start_dt)
-=======
             "product_key": "product_key",  # ASSUMED surrogate key (ROW_NUMBER())
             "product_id": "product_id",  # Gold view alias
             "product_number": "product_number",  # Gold view alias
@@ -152,7 +120,6 @@ GOLD_SCHEMA = {
             "cost": "product_cost",  # from prd_cost
             "product_line": "product_line",  # documented (Road/Mountain/Touring/Other)
             "start_date": "product_start_date",  # from prd_start_dt
->>>>>>> Stashed changes
         },
     },
     "fact_sales": {

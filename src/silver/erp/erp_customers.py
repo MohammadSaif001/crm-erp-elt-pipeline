@@ -1,11 +1,7 @@
 import pandas as pd
-<<<<<<< Updated upstream
-from src.core.database import get_engine
-=======
 from sqlalchemy import Date, DateTime, String
 
-from src.core.database import get_engine, load_to_silver
->>>>>>> Stashed changes
+from src.core.database import get_engine
 from src.core.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
@@ -153,15 +149,9 @@ def run_customer_pipeline() -> None:
                 "cid": String(100),
                 "birth_date_raw": Date(),
                 "gender_raw": String(50),
-<<<<<<< Updated upstream
-                "loaded_at": DateTime()
-            }, # type: ignore
-            chunksize=1000
-=======
                 "loaded_at": DateTime(),
             },
             chunksize=1000,
->>>>>>> Stashed changes
         )
         logger.info("ERP Customers Silver Pipeline completed successfully.")
     except Exception as e:
@@ -199,15 +189,9 @@ def run_location_pipeline() -> None:
             dtype={
                 "cid": String(100),
                 "country_name": String(255),
-<<<<<<< Updated upstream
-                "loaded_at": DateTime()
-            }, # type: ignore
-            chunksize=1000
-=======
                 "loaded_at": DateTime(),
             },
             chunksize=1000,
->>>>>>> Stashed changes
         )
         logger.info("ERP Customer Locations Silver Pipeline completed successfully.")
     except Exception as e:
@@ -235,15 +219,9 @@ def run_category_pipeline() -> None:
                 "cat": String(100),
                 "subcat": String(100),
                 "maintenance_raw": String(100),
-<<<<<<< Updated upstream
-                "loaded_at": DateTime()
-            }, # type: ignore
-            chunksize=1000
-=======
                 "loaded_at": DateTime(),
             },
             chunksize=1000,
->>>>>>> Stashed changes
         )
         logger.info("ERP Product Categories Silver Pipeline completed successfully.")
     except Exception as e:

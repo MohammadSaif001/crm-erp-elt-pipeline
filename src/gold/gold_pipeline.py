@@ -1,10 +1,3 @@
-"""
-Gold Layer Pipeline
--------------------
-Reads SQL view definitions from sql/gold/create_dim_customers.sql
-and executes them against the MySQL gold database.
-"""
-
 import os
 
 from sqlalchemy import text
