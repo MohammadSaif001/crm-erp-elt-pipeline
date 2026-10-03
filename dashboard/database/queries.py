@@ -1,11 +1,26 @@
-from __future__ import annotations
-import datetime as dt
-import csv
-from pathlib import Path
-import pandas as pd
-import streamlit as st
+"""
+database/queries.py
+==============================================================================
+All SQL queries used by the dashboard, centralized in one module so that:
+  1. Column-name assumptions (see config.GOLD_SCHEMA) only need to be
+     corrected in one place.
+  2. Every page function is a thin wrapper: build filters -> run_query ->
+     cached DataFrame.
 
+Query functions use a process-local TTL cache keyed by their arguments, so
+identical requests reuse results instead of re-hitting MySQL.
+"""
+
+from __future__ import annotations
+
+import csv
+import datetime as dt
+from pathlib import Path
+
+import pandas as pd
 from config import APP_SETTINGS, DB_SETTINGS, GOLD_SCHEMA
+from utils.cache import ttl_cache
+
 from database.connection import run_query, test_connection
 
 TTL = APP_SETTINGS.cache_ttl_seconds
@@ -57,18 +72,27 @@ def _base_from() -> str:
     )
 
 
-
-
-
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_filter_options() -> dict[str, list]:
     """Fetch distinct values for every global filter dropdown."""
-    countries = run_query(f"SELECT DISTINCT {_C['country']} AS v FROM {GOLD_SCHEMA['dim_customers']['table']} WHERE {_C['country']} IS NOT NULL ORDER BY 1")
-    categories = run_query(f"SELECT DISTINCT {_P['category']} AS v FROM {GOLD_SCHEMA['dim_products']['table']} WHERE {_P['category']} IS NOT NULL ORDER BY 1")
-    genders = run_query(f"SELECT DISTINCT {_C['gender']} AS v FROM {GOLD_SCHEMA['dim_customers']['table']} WHERE {_C['gender']} IS NOT NULL ORDER BY 1")
-    marital = run_query(f"SELECT DISTINCT {_C['marital_status']} AS v FROM {GOLD_SCHEMA['dim_customers']['table']} WHERE {_C['marital_status']} IS NOT NULL ORDER BY 1")
-    products = run_query(f"SELECT DISTINCT {_P['product_name']} AS v FROM {GOLD_SCHEMA['dim_products']['table']} WHERE {_P['product_name']} IS NOT NULL ORDER BY 1")
-    date_bounds = run_query(f"SELECT MIN({_F['order_date']}) AS min_d, MAX({_F['order_date']}) AS max_d FROM {GOLD_SCHEMA['fact_sales']['table']}")
+    countries = run_query(
+        f"SELECT DISTINCT {_C['country']} AS v FROM {GOLD_SCHEMA['dim_customers']['table']} WHERE {_C['country']} IS NOT NULL ORDER BY 1"
+    )
+    categories = run_query(
+        f"SELECT DISTINCT {_P['category']} AS v FROM {GOLD_SCHEMA['dim_products']['table']} WHERE {_P['category']} IS NOT NULL ORDER BY 1"
+    )
+    genders = run_query(
+        f"SELECT DISTINCT {_C['gender']} AS v FROM {GOLD_SCHEMA['dim_customers']['table']} WHERE {_C['gender']} IS NOT NULL ORDER BY 1"
+    )
+    marital = run_query(
+        f"SELECT DISTINCT {_C['marital_status']} AS v FROM {GOLD_SCHEMA['dim_customers']['table']} WHERE {_C['marital_status']} IS NOT NULL ORDER BY 1"
+    )
+    products = run_query(
+        f"SELECT DISTINCT {_P['product_name']} AS v FROM {GOLD_SCHEMA['dim_products']['table']} WHERE {_P['product_name']} IS NOT NULL ORDER BY 1"
+    )
+    date_bounds = run_query(
+        f"SELECT MIN({_F['order_date']}) AS min_d, MAX({_F['order_date']}) AS max_d FROM {GOLD_SCHEMA['fact_sales']['table']}"
+    )
 
     return {
         "countries": countries["v"].dropna().tolist() if not countries.empty else [],
@@ -81,25 +105,37 @@ def get_filter_options() -> dict[str, list]:
     }
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_executive_kpis(country=None, category=None, gender=None, marital_status=None, date_range=None) -> dict:
+@ttl_cache(ttl_seconds=TTL)
+def get_executive_kpis(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> dict:
     """Total revenue, orders, customers, products, AOV for the KPI row."""
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
         SELECT
-            COALESCE(SUM(f.{_F['sales_amount']}), 0) AS total_revenue,
-            COUNT(DISTINCT f.{_F['order_number']}) AS total_orders,
-            COUNT(DISTINCT c.{_C['customer_key']}) AS total_customers,
-            COUNT(DISTINCT p.{_P['product_key']}) AS total_products,
-            COALESCE(SUM(f.{_F['quantity']}), 0) AS total_quantity
+            COALESCE(SUM(f.{_F["sales_amount"]}), 0) AS total_revenue,
+            COUNT(DISTINCT f.{_F["order_number"]}) AS total_orders,
+            COUNT(DISTINCT c.{_C["customer_key"]}) AS total_customers,
+            COUNT(DISTINCT p.{_P["product_key"]}) AS total_products,
+            COALESCE(SUM(f.{_F["quantity"]}), 0) AS total_quantity
         {_base_from()}
         {where_sql}
     """
     df = run_query(sql, params=params)
     if df.empty:
-        return {"total_revenue": 0, "total_orders": 0, "total_customers": 0, "total_products": 0, "avg_order_value": 0}
+        return {
+            "total_revenue": 0,
+            "total_orders": 0,
+            "total_customers": 0,
+            "total_products": 0,
+            "avg_order_value": 0,
+        }
     row = df.iloc[0]
-    aov = float(row["total_revenue"]) / row["total_orders"] if row["total_orders"] else 0
+    aov = (
+        float(row["total_revenue"]) / row["total_orders"] if row["total_orders"] else 0
+    )
     return {
         "total_revenue": float(row["total_revenue"]),
         "total_orders": int(row["total_orders"]),
@@ -110,15 +146,19 @@ def get_executive_kpis(country=None, category=None, gender=None, marital_status=
     }
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_monthly_sales_trend(country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
+@ttl_cache(ttl_seconds=TTL)
+def get_monthly_sales_trend(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> pd.DataFrame:
     """Monthly revenue + order count trend."""
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
         SELECT
-            DATE_FORMAT(f.{_F['order_date']}, '%Y-%m') AS month,
-            SUM(f.{_F['sales_amount']}) AS revenue,
-            COUNT(DISTINCT f.{_F['order_number']}) AS orders
+            DATE_FORMAT(f.{_F["order_date"]}, '%Y-%m') AS month,
+            SUM(f.{_F["sales_amount"]}) AS revenue,
+            COUNT(DISTINCT f.{_F["order_number"]}) AS orders
         {_base_from()}
         {where_sql}
         GROUP BY month
@@ -127,15 +167,19 @@ def get_monthly_sales_trend(country=None, category=None, gender=None, marital_st
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_daily_sales(country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
+@ttl_cache(ttl_seconds=TTL)
+def get_daily_sales(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> pd.DataFrame:
     """Daily revenue trend."""
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
         SELECT
-            DATE(f.{_F['order_date']}) AS day,
-            SUM(f.{_F['sales_amount']}) AS revenue,
-            COUNT(DISTINCT f.{_F['order_number']}) AS orders
+            DATE(f.{_F["order_date"]}) AS day,
+            SUM(f.{_F["sales_amount"]}) AS revenue,
+            COUNT(DISTINCT f.{_F["order_number"]}) AS orders
         {_base_from()}
         {where_sql}
         GROUP BY day
@@ -144,57 +188,78 @@ def get_daily_sales(country=None, category=None, gender=None, marital_status=Non
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_revenue_by_country(country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+@ttl_cache(ttl_seconds=TTL)
+def get_revenue_by_country(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> pd.DataFrame:
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
-        SELECT c.{_C['country']} AS country, SUM(f.{_F['sales_amount']}) AS revenue,
-               COUNT(DISTINCT f.{_F['order_number']}) AS orders
+        SELECT c.{_C["country"]} AS country, SUM(f.{_F["sales_amount"]}) AS revenue,
+               COUNT(DISTINCT f.{_F["order_number"]}) AS orders
         {_base_from()}
         {where_sql}
-        GROUP BY c.{_C['country']}
+        GROUP BY c.{_C["country"]}
         ORDER BY revenue DESC
     """
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_revenue_by_category(country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+@ttl_cache(ttl_seconds=TTL)
+def get_revenue_by_category(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> pd.DataFrame:
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
-        SELECT p.{_P['category']} AS category, SUM(f.{_F['sales_amount']}) AS revenue,
-               SUM(f.{_F['quantity']}) AS quantity
+        SELECT p.{_P["category"]} AS category, SUM(f.{_F["sales_amount"]}) AS revenue,
+               SUM(f.{_F["quantity"]}) AS quantity
         {_base_from()}
         {where_sql}
-        GROUP BY p.{_P['category']}
+        GROUP BY p.{_P["category"]}
         ORDER BY revenue DESC
     """
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_revenue_by_product_line(country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+@ttl_cache(ttl_seconds=TTL)
+def get_revenue_by_product_line(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> pd.DataFrame:
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
-        SELECT p.{_P['product_line']} AS product_line, SUM(f.{_F['sales_amount']}) AS revenue
+        SELECT p.{_P["product_line"]} AS product_line, SUM(f.{_F["sales_amount"]}) AS revenue
         {_base_from()}
         {where_sql}
-        GROUP BY p.{_P['product_line']}
+        GROUP BY p.{_P["product_line"]}
         ORDER BY revenue DESC
     """
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_top_customers(limit: int = 10, country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+@ttl_cache(ttl_seconds=TTL)
+def get_top_customers(
+    limit: int = 10,
+    country=None,
+    category=None,
+    gender=None,
+    marital_status=None,
+    date_range=None,
+) -> pd.DataFrame:
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     params["limit"] = limit
     sql = f"""
         SELECT
-            CONCAT(c.{_C['first_name']}, ' ', c.{_C['last_name']}) AS customer_name,
-            c.{_C['country']} AS country,
-            SUM(f.{_F['sales_amount']}) AS revenue,
-            COUNT(DISTINCT f.{_F['order_number']}) AS orders
+            CONCAT(c.{_C["first_name"]}, ' ', c.{_C["last_name"]}) AS customer_name,
+            c.{_C["country"]} AS country,
+            SUM(f.{_F["sales_amount"]}) AS revenue,
+            COUNT(DISTINCT f.{_F["order_number"]}) AS orders
         {_base_from()}
         {where_sql}
         GROUP BY customer_name, country
@@ -204,16 +269,25 @@ def get_top_customers(limit: int = 10, country=None, category=None, gender=None,
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_top_products(limit: int = 10, country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+@ttl_cache(ttl_seconds=TTL)
+def get_top_products(
+    limit: int = 10,
+    country=None,
+    category=None,
+    gender=None,
+    marital_status=None,
+    date_range=None,
+) -> pd.DataFrame:
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     params["limit"] = limit
     sql = f"""
         SELECT
-            p.{_P['product_name']} AS product_name,
-            p.{_P['category']} AS category,
-            SUM(f.{_F['sales_amount']}) AS revenue,
-            SUM(f.{_F['quantity']}) AS quantity_sold
+            p.{_P["product_name"]} AS product_name,
+            p.{_P["category"]} AS category,
+            SUM(f.{_F["sales_amount"]}) AS revenue,
+            SUM(f.{_F["quantity"]}) AS quantity_sold
         {_base_from()}
         {where_sql}
         GROUP BY product_name, category
@@ -223,36 +297,49 @@ def get_top_products(limit: int = 10, country=None, category=None, gender=None, 
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_top_orders(limit: int = 10, country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+@ttl_cache(ttl_seconds=TTL)
+def get_top_orders(
+    limit: int = 10,
+    country=None,
+    category=None,
+    gender=None,
+    marital_status=None,
+    date_range=None,
+) -> pd.DataFrame:
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     params["limit"] = limit
     sql = f"""
         SELECT
-            f.{_F['order_number']} AS order_number,
-            CONCAT(c.{_C['first_name']}, ' ', c.{_C['last_name']}) AS customer_name,
-            p.{_P['product_name']} AS product_name,
-            f.{_F['order_date']} AS order_date,
-            f.{_F['sales_amount']} AS sales_amount
+            f.{_F["order_number"]} AS order_number,
+            CONCAT(c.{_C["first_name"]}, ' ', c.{_C["last_name"]}) AS customer_name,
+            p.{_P["product_name"]} AS product_name,
+            f.{_F["order_date"]} AS order_date,
+            f.{_F["sales_amount"]} AS sales_amount
         {_base_from()}
         {where_sql}
-        ORDER BY f.{_F['sales_amount']} DESC
+        ORDER BY f.{_F["sales_amount"]} DESC
         LIMIT :limit
     """
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
-def get_customer_growth(country=None, category=None, gender=None, marital_status=None, date_range=None) -> pd.DataFrame:
+@ttl_cache(ttl_seconds=TTL)
+def get_customer_growth(
+    country=None, category=None, gender=None, marital_status=None, date_range=None
+) -> pd.DataFrame:
     """New customers acquired per month, based on first order date."""
-    where_sql, params = _filter_clause(country, category, gender, marital_status, date_range)
+    where_sql, params = _filter_clause(
+        country, category, gender, marital_status, date_range
+    )
     sql = f"""
         SELECT DATE_FORMAT(first_order.month, '%Y-%m') AS month, COUNT(*) AS new_customers
         FROM (
-            SELECT c.{_C['customer_key']} AS customer_key, MIN(f.{_F['order_date']}) AS month
+            SELECT c.{_C["customer_key"]} AS customer_key, MIN(f.{_F["order_date"]}) AS month
             {_base_from()}
             {where_sql}
-            GROUP BY c.{_C['customer_key']}
+            GROUP BY c.{_C["customer_key"]}
         ) AS first_order
         GROUP BY month
         ORDER BY month
@@ -260,7 +347,7 @@ def get_customer_growth(country=None, category=None, gender=None, marital_status
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_customer_distribution() -> dict[str, pd.DataFrame]:
     """Gender and country distribution across the full customer base."""
     gender_df = run_query(
@@ -278,7 +365,7 @@ def get_customer_distribution() -> dict[str, pd.DataFrame]:
     return {"gender": gender_df, "country": country_df, "marital_status": marital_df}
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_repeat_vs_new_customers(date_range=None) -> pd.DataFrame:
     """Classify customers as repeat (2+ orders) vs one-time buyers."""
     where_sql, params = _filter_clause(None, None, None, None, date_range)
@@ -287,26 +374,26 @@ def get_repeat_vs_new_customers(date_range=None) -> pd.DataFrame:
             CASE WHEN order_count > 1 THEN 'Repeat' ELSE 'One-Time' END AS customer_type,
             COUNT(*) AS customers
         FROM (
-            SELECT c.{_C['customer_key']} AS customer_key, COUNT(DISTINCT f.{_F['order_number']}) AS order_count
+            SELECT c.{_C["customer_key"]} AS customer_key, COUNT(DISTINCT f.{_F["order_number"]}) AS order_count
             {_base_from()}
             {where_sql}
-            GROUP BY c.{_C['customer_key']}
+            GROUP BY c.{_C["customer_key"]}
         ) AS order_counts
         GROUP BY customer_type
     """
     return run_query(sql, params=params)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_customer_lifetime_value(limit: int = 15) -> pd.DataFrame:
     """Total revenue generated per customer (CLV proxy) — top N."""
     sql = f"""
         SELECT
-            CONCAT(c.{_C['first_name']}, ' ', c.{_C['last_name']}) AS customer_name,
-            SUM(f.{_F['sales_amount']}) AS lifetime_value,
-            COUNT(DISTINCT f.{_F['order_number']}) AS total_orders,
-            MIN(f.{_F['order_date']}) AS first_order,
-            MAX(f.{_F['order_date']}) AS last_order
+            CONCAT(c.{_C["first_name"]}, ' ', c.{_C["last_name"]}) AS customer_name,
+            SUM(f.{_F["sales_amount"]}) AS lifetime_value,
+            COUNT(DISTINCT f.{_F["order_number"]}) AS total_orders,
+            MIN(f.{_F["order_date"]}) AS first_order,
+            MAX(f.{_F["order_date"]}) AS last_order
         {_base_from()}
         GROUP BY customer_name
         ORDER BY lifetime_value DESC
@@ -315,65 +402,68 @@ def get_customer_lifetime_value(limit: int = 15) -> pd.DataFrame:
     return run_query(sql, params={"limit": limit})
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_product_analytics() -> pd.DataFrame:
     """Per-product revenue, quantity, and active status."""
     sql = f"""
         SELECT
-            p.{_P['product_name']} AS product_name,
-            p.{_P['category']} AS category,
-            p.{_P['subcategory']} AS subcategory,
-            p.{_P['product_line']} AS product_line,
-            COALESCE(SUM(f.{_F['sales_amount']}), 0) AS revenue,
-            COALESCE(SUM(f.{_F['quantity']}), 0) AS quantity_sold
-        FROM {GOLD_SCHEMA['dim_products']['table']} p
-        LEFT JOIN {GOLD_SCHEMA['fact_sales']['table']} f
-            ON p.{_P['product_key']} = f.{_F['product_key']}
+            p.{_P["product_name"]} AS product_name,
+            p.{_P["category"]} AS category,
+            p.{_P["subcategory"]} AS subcategory,
+            p.{_P["product_line"]} AS product_line,
+            COALESCE(SUM(f.{_F["sales_amount"]}), 0) AS revenue,
+            COALESCE(SUM(f.{_F["quantity"]}), 0) AS quantity_sold
+        FROM {GOLD_SCHEMA["dim_products"]["table"]} p
+        LEFT JOIN {GOLD_SCHEMA["fact_sales"]["table"]} f
+            ON p.{_P["product_key"]} = f.{_F["product_key"]}
         GROUP BY product_name, category, subcategory, product_line
         ORDER BY revenue DESC
     """
     return run_query(sql)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_active_product_count() -> int:
     """Gold dim_products is already filtered to active products only (prd_end_dt IS NULL)."""
     df = run_query(f"SELECT COUNT(*) AS n FROM {GOLD_SCHEMA['dim_products']['table']}")
     return int(df["n"].iloc[0]) if not df.empty else 0
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_row_counts() -> pd.DataFrame:
     """Row counts across bronze / silver / gold for the pipeline-monitoring & DQ pages."""
     layer_tables = {
         DB_SETTINGS.bronze_db: [
-            "crm_customers_info", "crm_prd_info", "crm_sales_details",
-            "erp_cust_az12", "erp_location_a101", "erp_px_cat_g1v2",
+            "crm_customers_info",
+            "crm_prd_info",
+            "crm_sales_details",
+            "erp_cust_az12",
+            "erp_location_a101",
+            "erp_px_cat_g1v2",
         ],
         DB_SETTINGS.silver_db: [
-            "crm_customers_info", "crm_prd_info", "crm_sales_details",
-            "erp_cust_az12", "erp_location_a101", "erp_px_cat_g1v2",
+            "crm_customers_info",
+            "crm_prd_info",
+            "crm_sales_details",
+            "erp_cust_az12",
+            "erp_location_a101",
+            "erp_px_cat_g1v2",
         ],
         DB_SETTINGS.gold_db: ["dim_customers", "dim_products", "fact_sales"],
     }
     rows = []
     for db, tables in layer_tables.items():
-        layer_name = {DB_SETTINGS.bronze_db: "Bronze", DB_SETTINGS.silver_db: "Silver", DB_SETTINGS.gold_db: "Gold"}[db]
+        layer_name = {
+            DB_SETTINGS.bronze_db: "Bronze",
+            DB_SETTINGS.silver_db: "Silver",
+            DB_SETTINGS.gold_db: "Gold",
+        }[db]
         for table in tables:
             df = run_query(f"SELECT COUNT(*) AS n FROM {table}", database=db)
             count = int(df["n"].iloc[0]) if not df.empty else 0
             rows.append({"layer": layer_name, "table": table, "row_count": count})
     return pd.DataFrame(rows)
 
-
-# --------------------------------------------------------------------------
-# DATA QUALITY CHECKS
-# --------------------------------------------------------------------------
-# These mirror the pipeline's own `src/database_checks/*.py` modules
-# (check_nulls, check_duplicates, check_row_counts, check_fk_integrity) by
-# re-running equivalent read-only SQL directly against Silver/Gold, so the
-# dashboard's DQ score reflects the live database state rather than a stale
-# log file.
 
 _NULL_CHECK_TARGETS = [
     # Same rules as src.database_checks.check_nulls.NOT_NULL_RULES["silver"].
@@ -407,48 +497,102 @@ _DUPLICATE_CHECK_TARGETS = [
 
 _FK_CHECK_TARGETS = [
     # Same rules and exception as src.database_checks.check_fk_integrity.
-    ("sales.sales_cust_id -> customers.cst_id", DB_SETTINGS.silver_db, "crm_sales_details", "sales_cust_id",
-     DB_SETTINGS.silver_db, "crm_customers_info", "cst_id"),
-    ("sales.sales_prd_key -> products.prd_key", DB_SETTINGS.silver_db, "crm_sales_details", "sales_prd_key",
-     DB_SETTINGS.silver_db, "crm_prd_info", "prd_key"),
-    ("erp_cust.cid -> customers.cst_key", DB_SETTINGS.silver_db, "erp_cust_az12", "cid",
-     DB_SETTINGS.silver_db, "crm_customers_info", "cst_key"),
-    ("erp_location.cid -> customers.cst_key", DB_SETTINGS.silver_db, "erp_location_a101", "cid",
-     DB_SETTINGS.silver_db, "crm_customers_info", "cst_key"),
-    ("erp_category.id -> products.cat_id", DB_SETTINGS.silver_db, "erp_px_cat_g1v2", "id",
-     DB_SETTINGS.silver_db, "crm_prd_info", "cat_id"),
+    (
+        "sales.sales_cust_id -> customers.cst_id",
+        DB_SETTINGS.silver_db,
+        "crm_sales_details",
+        "sales_cust_id",
+        DB_SETTINGS.silver_db,
+        "crm_customers_info",
+        "cst_id",
+    ),
+    (
+        "sales.sales_prd_key -> products.prd_key",
+        DB_SETTINGS.silver_db,
+        "crm_sales_details",
+        "sales_prd_key",
+        DB_SETTINGS.silver_db,
+        "crm_prd_info",
+        "prd_key",
+    ),
+    (
+        "erp_cust.cid -> customers.cst_key",
+        DB_SETTINGS.silver_db,
+        "erp_cust_az12",
+        "cid",
+        DB_SETTINGS.silver_db,
+        "crm_customers_info",
+        "cst_key",
+    ),
+    (
+        "erp_location.cid -> customers.cst_key",
+        DB_SETTINGS.silver_db,
+        "erp_location_a101",
+        "cid",
+        DB_SETTINGS.silver_db,
+        "crm_customers_info",
+        "cst_key",
+    ),
+    (
+        "erp_category.id -> products.cat_id",
+        DB_SETTINGS.silver_db,
+        "erp_px_cat_g1v2",
+        "id",
+        DB_SETTINGS.silver_db,
+        "crm_prd_info",
+        "cat_id",
+    ),
 ]
 
 _FK_EXCEPTIONS = {"erp_category.id -> products.cat_id": ("CO_PD",)}
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_null_check_results() -> pd.DataFrame:
     """Null-count per critical column across silver tables."""
     rows = []
     for db, table, col in _NULL_CHECK_TARGETS:
         connected, _ = test_connection(db)
         if not connected:
-            rows.append({"check": f"{table}.{col} NOT NULL", "total_rows": None, "failed_rows": None,
-                         "passed": False, "status": "FAILED"})
+            rows.append(
+                {
+                    "check": f"{table}.{col} NOT NULL",
+                    "total_rows": None,
+                    "failed_rows": None,
+                    "passed": False,
+                    "status": "FAILED",
+                }
+            )
             continue
-        df = run_query(f"SELECT COUNT(*) AS total, SUM(CASE WHEN {col} IS NULL THEN 1 ELSE 0 END) AS nulls FROM {table}", database=db)
+        df = run_query(
+            f"SELECT COUNT(*) AS total, SUM(CASE WHEN {col} IS NULL THEN 1 ELSE 0 END) AS nulls FROM {table}",
+            database=db,
+        )
         if df.empty or not {"total", "nulls"}.issubset(df.columns):
-            rows.append({"check": f"{table}.{col} NOT NULL", "total_rows": None, "failed_rows": None,
-                         "passed": False, "status": "FAILED"})
+            rows.append(
+                {
+                    "check": f"{table}.{col} NOT NULL",
+                    "total_rows": None,
+                    "failed_rows": None,
+                    "passed": False,
+                    "status": "FAILED",
+                }
+            )
             continue
         total, nulls = int(df["total"].iloc[0]), int(df["nulls"].iloc[0] or 0)
-        rows.append({
-            "check": f"{table}.{col} NOT NULL",
-            "total_rows": total,
-            "failed_rows": nulls,
-            "passed": nulls == 0,
-            "status": "PASS" if nulls == 0 else "FAILED",
-        })
+        rows.append(
+            {
+                "check": f"{table}.{col} NOT NULL",
+                "total_rows": total,
+                "failed_rows": nulls,
+                "passed": nulls == 0,
+                "status": "PASS" if nulls == 0 else "FAILED",
+            }
+        )
     return pd.DataFrame(rows)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_duplicate_check_results() -> pd.DataFrame:
     """Primary-key uniqueness per table, mirroring ``check_duplicates.py``.
 
@@ -460,28 +604,44 @@ def get_duplicate_check_results() -> pd.DataFrame:
     for db, table, pk in _DUPLICATE_CHECK_TARGETS:
         connected, connection_message = test_connection(db)
         if not connected:
-            rows.append({"check": f"{table}.{pk} UNIQUE", "duplicate_keys": None,
-                         "passed": False, "status": "FAILED", "error": connection_message})
+            rows.append(
+                {
+                    "check": f"{table}.{pk} UNIQUE",
+                    "duplicate_keys": None,
+                    "passed": False,
+                    "status": "FAILED",
+                    "error": connection_message,
+                }
+            )
             continue
         df = run_query(
             f"SELECT COALESCE(SUM(cnt), 0) AS n FROM (SELECT COUNT(*) AS cnt FROM {table} GROUP BY {pk} HAVING COUNT(*) > 1) AS dupes",
             database=db,
         )
         if df.empty or "n" not in df.columns:
-            rows.append({"check": f"{table}.{pk} UNIQUE", "duplicate_keys": None,
-                         "passed": False, "status": "FAILED", "error": "Duplicate query did not return a result."})
+            rows.append(
+                {
+                    "check": f"{table}.{pk} UNIQUE",
+                    "duplicate_keys": None,
+                    "passed": False,
+                    "status": "FAILED",
+                    "error": "Duplicate query did not return a result.",
+                }
+            )
             continue
         dupes = int(df["n"].iloc[0] or 0)
-        rows.append({
-            "check": f"{table}.{pk} UNIQUE",
-            "duplicate_keys": dupes,
-            "passed": dupes == 0,
-            "status": "PASS" if dupes == 0 else "WARNING",
-        })
+        rows.append(
+            {
+                "check": f"{table}.{pk} UNIQUE",
+                "duplicate_keys": dupes,
+                "passed": dupes == 0,
+                "status": "PASS" if dupes == 0 else "WARNING",
+            }
+        )
     return pd.DataFrame(rows)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_pipeline_lineage() -> dict[str, int | None]:
     """Return source and layer row totals used by the pipeline-flow report.
 
@@ -494,7 +654,9 @@ def get_pipeline_lineage() -> dict[str, int | None]:
     source_files = list(raw_dir.glob("source_*/*.csv"))
     for csv_path in source_files:
         try:
-            with csv_path.open("r", encoding="utf-8", errors="replace", newline="") as handle:
+            with csv_path.open(
+                "r", encoding="utf-8", errors="replace", newline=""
+            ) as handle:
                 source_rows += max(sum(1 for _ in csv.reader(handle)) - 1, 0)
         except OSError:
             return {"source": None, "bronze": None, "silver": None, "gold": None}
@@ -503,11 +665,15 @@ def get_pipeline_lineage() -> dict[str, int | None]:
     if counts.empty:
         return {"source": source_rows, "bronze": None, "silver": None, "gold": None}
     totals = counts.groupby("layer")["row_count"].sum().to_dict()
-    return {"source": source_rows, "bronze": int(totals.get("Bronze", 0)),
-            "silver": int(totals.get("Silver", 0)), "gold": int(totals.get("Gold", 0))}
+    return {
+        "source": source_rows,
+        "bronze": int(totals.get("Bronze", 0)),
+        "silver": int(totals.get("Silver", 0)),
+        "gold": int(totals.get("Gold", 0)),
+    }
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_fk_integrity_results() -> pd.DataFrame:
     """Orphaned foreign-key rows per documented FK rule."""
     rows = []
@@ -530,15 +696,28 @@ def get_fk_integrity_results() -> pd.DataFrame:
         """
         df = run_query(sql, database=cdb)
         if df.empty or "n" not in df.columns:
-            rows.append({"check": label, "orphaned_rows": None, "passed": False, "status": "FAILED"})
+            rows.append(
+                {
+                    "check": label,
+                    "orphaned_rows": None,
+                    "passed": False,
+                    "status": "FAILED",
+                }
+            )
             continue
         orphaned = int(df["n"].iloc[0] or 0)
-        rows.append({"check": label, "orphaned_rows": orphaned, "passed": orphaned == 0,
-                     "status": "PASS" if orphaned == 0 else "FAILED"})
+        rows.append(
+            {
+                "check": label,
+                "orphaned_rows": orphaned,
+                "passed": orphaned == 0,
+                "status": "PASS" if orphaned == 0 else "FAILED",
+            }
+        )
     return pd.DataFrame(rows)
 
 
-@st.cache_data(ttl=TTL, show_spinner=False)
+@ttl_cache(ttl_seconds=TTL)
 def get_row_count_check_results() -> pd.DataFrame:
     """Mirror the DQ tests: non-empty Bronze/Silver tables and Silver <= Bronze."""
     df = get_row_counts()
@@ -549,14 +728,28 @@ def get_row_count_check_results() -> pd.DataFrame:
     silver = df[df["layer"] == "Silver"].set_index("table")["row_count"].to_dict()
     for layer_name, layer_counts in (("Bronze", bronze), ("Silver", silver)):
         for table, count in layer_counts.items():
-            rows.append({"layer": layer_name, "table": table, "row_count": count,
-                         "check": f"{layer_name}.{table} is not empty", "passed": count > 0,
-                         "status": "PASS" if count > 0 else "FAILED"})
+            rows.append(
+                {
+                    "layer": layer_name,
+                    "table": table,
+                    "row_count": count,
+                    "check": f"{layer_name}.{table} is not empty",
+                    "passed": count > 0,
+                    "status": "PASS" if count > 0 else "FAILED",
+                }
+            )
     for table in sorted(set(bronze) & set(silver)):
         passed = silver[table] <= bronze[table]
-        rows.append({"layer": "Bronze → Silver", "table": table, "row_count": silver[table],
-                     "check": f"{table}: Silver row count <= Bronze", "passed": passed,
-                     "status": "PASS" if passed else "FAILED"})
+        rows.append(
+            {
+                "layer": "Bronze → Silver",
+                "table": table,
+                "row_count": silver[table],
+                "check": f"{table}: Silver row count <= Bronze",
+                "passed": passed,
+                "status": "PASS" if passed else "FAILED",
+            }
+        )
     return pd.DataFrame(rows)
 
 

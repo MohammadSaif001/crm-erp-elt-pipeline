@@ -1,15 +1,10 @@
-"""
-Gold Layer Pipeline
--------------------
-Reads SQL view definitions from sql/gold/create_dim_customers.sql
-and executes them against the MySQL gold database.
-"""
 import os
-from sqlalchemy import text
-from src.core.logger import setup_logger
-from src.core.database import get_engine
-from src.core.paths import get_project_root
 
+from sqlalchemy import text
+
+from src.core.database import get_engine
+from src.core.logger import setup_logger
+from src.core.paths import get_project_root
 
 logger = setup_logger("gold_pipeline")
 

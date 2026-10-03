@@ -1,43 +1,49 @@
 import pandas as pd
 from sqlalchemy import text
+
 from src.core.database import get_engine
-from src.database_checks.check_nulls import run_null_checks
-from src.database_checks.check_row_counts import run_row_count_report
 from src.database_checks.check_duplicates import run_duplicate_checks
 from src.database_checks.check_fk_integrity import run_fk_integrity_report
+from src.database_checks.check_nulls import run_null_checks
+from src.database_checks.check_row_counts import run_row_count_report
 
 
-
-def check_data_slim()-> None:
+def check_data_slim() -> None:
     # Pandas settings for clean output
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', 1000)
-    
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.width", 1000)
+
     engine = get_engine("bronze")
-    tables_to_check = ['crm_customers_info', 'crm_prd_info','crm_sales_details',
-                       'erp_location_a101','erp_cust_az12','erp_px_cat_g1v2']
+    tables_to_check = [
+        "crm_customers_info",
+        "crm_prd_info",
+        "crm_sales_details",
+        "erp_location_a101",
+        "erp_cust_az12",
+        "erp_px_cat_g1v2",
+    ]
 
     for table in tables_to_check:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"TABLE: {table.upper()} (Without Raw JSON)")
-        print(f"{'='*60}")
-        
+        print(f"{'=' * 60}")
+
         with engine.connect() as conn:
             # Query
             query = text(f"SELECT * FROM {table} LIMIT 5")
             df = pd.read_sql(query, conn)
-            
+
             if df.empty:
                 print("Table is empty!")
             else:
-                
-                if 'raw_row' in df.columns:
-                    df_display = df.drop(columns=['raw_row'])
+                if "raw_row" in df.columns:
+                    df_display = df.drop(columns=["raw_row"])
                 else:
                     df_display = df
-                
+
                 print(df_display.to_string(index=False))
                 print(f"\nTotal Rows: {len(df)}")
+
 
 if __name__ == "__main__":
     check_data_slim()

@@ -1,18 +1,11 @@
 import pandas as pd
-from src.core.database import get_engine, load_to_silver
+from sqlalchemy import Date, DateTime, Integer, Numeric, String
+
+from src.core.database import get_engine
 from src.core.logger import setup_logger
-from sqlalchemy import String, Integer, Numeric, DateTime, Date
-
-# # Setup path for module imports
-# _current_file = Path(__file__).resolve()
-# _python_root = _current_file.parents[2]  # Navigate: crm → silver → python
-
-# if str(_python_root) not in sys.path:
-#     sys.path.insert(0, str(_python_root))
-
-# from utils.db_connection import get_engine
 
 logger = setup_logger(__name__.split(".")[-1])
+
 
 def extract_from_bronze(table_name: str) -> pd.DataFrame:
     engine = get_engine("bronze")
@@ -21,18 +14,20 @@ def extract_from_bronze(table_name: str) -> pd.DataFrame:
     except Exception as e:
         raise RuntimeError(f"Failed to extract from bronze table {table_name}") from e
 
+
 #! Define expected schema for sales data
 schema_sales = {
-    "sales_ord_num"       : "string",
-    "sales_prd_key"       : "string",
-    "sales_cust_id"       : "string",
-    "sales_sales"         : "float64",
-    "sales_quantity"      : "Int64",
-    "sales_price"         : "float64",
+    "sales_ord_num": "string",
+    "sales_prd_key": "string",
+    "sales_cust_id": "string",
+    "sales_sales": "float64",
+    "sales_quantity": "Int64",
+    "sales_price": "float64",
     "sales_order_date_raw": "datetime64[ns]",
-    "sales_ship_date_raw" : "datetime64[ns]",
-    "sales_due_date_raw"  : "datetime64[ns]"
-    }
+    "sales_ship_date_raw": "datetime64[ns]",
+    "sales_due_date_raw": "datetime64[ns]",
+}
+
 
 #!Schema enforcement function to ensure data types are correct and handle errors gracefully.
 def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
@@ -47,7 +42,6 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
         pd.DataFrame: DataFrame with updated datatypes.
     """
     for column, dtype in schema.items():
-
         if column not in df.columns:
             #! log warning and skip missing columns
             logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
@@ -61,12 +55,13 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
         elif dtype == "boolean":
             df[column] = df[column].astype("boolean")
         elif dtype == "string":
-            df[column] = df[column].astype("string")    
+            df[column] = df[column].astype("string")
         else:
             # fallback (rare cases)
             df[column] = df[column].astype(dtype)
 
     return df
+
 
 #! data normalization function to handle nulls and whitespace in string columns
 def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -90,42 +85,41 @@ def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
         df[col] = (
             df[col]
             .str.strip()
-            .replace(
-                ["", "NULL", "null", "None", "none", "nan", "NaN"], 
-                pd.NA
-                )
+            .replace(["", "NULL", "null", "None", "none", "nan", "NaN"], pd.NA)
         )
-    df.drop("raw_row",axis=1,inplace=True)
+    df.drop("raw_row", axis=1, inplace=True)
     return df
 
 
-
 #! datetime conversion function to convert date columns and log any conversion issues
-def datetime_conversion(df:pd.DataFrame) -> pd.DataFrame:
+def datetime_conversion(df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts raw date columns to proper datetime format and logs conversion issues.
     """
     date_cols = [col for col in df.columns if col.endswith("_date_raw")]
     for col in date_cols:
-        df[col] = pd.to_datetime(df[col], format = "%Y-%m-%d", errors="coerce")
+        df[col] = pd.to_datetime(df[col], format="%Y-%m-%d", errors="coerce")
         null_count = df[col].isna().sum()
-        logger.info(f"Converted {col} to datetime. Null values after conversion: {null_count}")
+        logger.info(
+            f"Converted {col} to datetime. Null values after conversion: {null_count}"
+        )
         logger.info(f"{col} -> {null_count} invalid dates converted to NaT")
     return df
 
+
 #! data validation function
-def validate_data(df: pd.DataFrame)-> tuple[pd.DataFrame, pd.DataFrame]:
-    """ Validates data against business rules and logs any issues found. 
-        Example rules: 
-        - valid_df: Records that passed validation 
-        - invalid_df: Records thar failed validation and were logged for review """
+def validate_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Validates data against business rules and logs any issues found.
+    Example rules:
+    - valid_df: Records that passed validation
+    - invalid_df: Records thar failed validation and were logged for review"""
     invalid_mask = (
-        (df["sales_price"] < 0) |
-        (df["sales_quantity"] < 0) |
-        (df["sales_sales"] < 0) |
-        (df["sales_order_date_raw"] > df["sales_ship_date_raw"]) |
-        (df["sales_quantity"].isna()) |
-        (df["sales_price"].isna())
+        (df["sales_price"] < 0)
+        | (df["sales_quantity"] < 0)
+        | (df["sales_sales"] < 0)
+        | (df["sales_order_date_raw"] > df["sales_ship_date_raw"])
+        | (df["sales_quantity"].isna())
+        | (df["sales_price"].isna())
     )
 
     invalid_df = df.loc[invalid_mask].copy()
@@ -135,6 +129,7 @@ def validate_data(df: pd.DataFrame)-> tuple[pd.DataFrame, pd.DataFrame]:
         logger.warning(f"{len(invalid_df)} invalid records detected.")
 
     return valid_df, invalid_df
+
 
 #!treating some colums [e.g sales_sales, sales_quality,sales_price]
 def clean_sales_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -158,8 +153,8 @@ def clean_sales_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-    
-def run_sales_pipeline(table_name: str)-> None:
+
+def run_sales_pipeline(table_name: str) -> None:
     df_sales = extract_from_bronze(table_name)
     df_sales = enforce_schema(df_sales, schema_sales)
     df_sales = normalize_data(df_sales)
@@ -177,32 +172,39 @@ def run_sales_pipeline(table_name: str)-> None:
         subset=["sales_ord_num", "sales_prd_key"], keep="last"
     )
     if len(valid_df) != before:
-        logger.warning("[DEDUP] Removed %s duplicate sales rows", before - len(valid_df))
+        logger.warning(
+            "[DEDUP] Removed %s duplicate sales rows", before - len(valid_df)
+        )
 
-    valid_df = valid_df.rename(columns={
-        "sales_order_date_raw": "sales_order_date",
-        "sales_ship_date_raw": "sales_ship_date",
-        "sales_due_date_raw": "sales_due_date"
-    })
+    valid_df = valid_df.rename(
+        columns={
+            "sales_order_date_raw": "sales_order_date",
+            "sales_ship_date_raw": "sales_ship_date",
+            "sales_due_date_raw": "sales_due_date",
+        }
+    )
     valid_df["loaded_at"] = pd.Timestamp.now()
 
-    load_to_silver(
-        valid_df,
-        "crm_sales_details",
-        get_engine("silver"),
+    valid_df.to_sql(
+        name = "crm_sales_details",
+        con  = get_engine("silver"),
+        if_exists = "replace",
+        index=False,
         dtype={
-            "sales_ord_num"       : String(100),
-            "sales_prd_key"       : String(100),
-            "sales_cust_id"       : String(50),
-            "sales_sales"         : Numeric(12,2),
-            "sales_quantity"      : Integer(),
-            "sales_price"         : Numeric(12,2),
-            "sales_order_date"    : Date(),
-            "sales_ship_date"     : Date(),
-            "sales_due_date"      : Date(),
-            "loaded_at"           : DateTime()
-         },
+            "sales_ord_num": String(100),
+            "sales_prd_key": String(100),
+            "sales_cust_id": String(50),
+            "sales_sales": Numeric(12, 2),
+            "sales_quantity": Integer(),
+            "sales_price": Numeric(12, 2),
+            "sales_order_date": Date(),
+            "sales_ship_date": Date(),
+            "sales_due_date": Date(),
+            "loaded_at": DateTime(),
+        },
         chunksize=1000,
     )
+
+
 if __name__ == "__main__":
     run_sales_pipeline("crm_sales_details")

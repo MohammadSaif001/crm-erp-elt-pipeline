@@ -1,10 +1,11 @@
 import pandas as pd
-from src.core.database import get_engine, load_to_silver
-from src.core.logger import setup_logger
-from sqlalchemy import String, Date, DateTime
+from sqlalchemy import Date, DateTime, String
 
+from src.core.database import get_engine
+from src.core.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
+
 
 def extract_from_bronze(table_name: str) -> pd.DataFrame:
     engine = get_engine("bronze")
@@ -13,21 +14,22 @@ def extract_from_bronze(table_name: str) -> pd.DataFrame:
     except Exception as e:
         raise RuntimeError(f"Failed to extract from bronze table {table_name}") from e
 
-schema_customer ={
-    "cid"                 : "string",
-    "birth_date_raw"      : "datetime64[ns]",
-    "gender_raw"          : "string"
-    }
 
-schema_location = {
-    "cid"                 : "string",
-    "country_name"        : "string",
+schema_customer = {
+    "cid": "string",
+    "birth_date_raw": "datetime64[ns]",
+    "gender_raw": "string",
 }
 
-#! high level schema enforcement function 
+schema_location = {
+    "cid": "string",
+    "country_name": "string",
+}
+
+
+#! high level schema enforcement function
 def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     for column, dtype in schema.items():
-
         if column not in df.columns:
             #! log warning and skip missing columns
             logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
@@ -47,7 +49,9 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
             df[column] = df[column].astype(dtype)
 
     return df
-#! Customer ID Standardization 
+
+
+#! Customer ID Standardization
 def standardize_customer_id(df: pd.DataFrame) -> pd.DataFrame:
 
     if "cid" not in df.columns:
@@ -57,32 +61,26 @@ def standardize_customer_id(df: pd.DataFrame) -> pd.DataFrame:
     df = df.loc[df["cid"].str.len() >= 10].copy()
     dropped = before - len(df)
     if dropped > 0:
-        logger.warning(
-            f"{dropped} records dropped due to invalid CID length."
-        )
+        logger.warning(f"{dropped} records dropped due to invalid CID length.")
     df.loc[:, "cid"] = df["cid"].astype(str).str[-10:]
 
     return df
 
-customer_replacemts = {
-    "gender_raw": {
-        "M": "Male",
-        "F": "Female",
-        "": "n/a"
-    }
-}
 
-location_replacements ={
+customer_replacemts = {"gender_raw": {"M": "Male", "F": "Female", "": "n/a"}}
+
+location_replacements = {
     "country_name": {
-        "USA" : "United States",
-        "US"  : "United States",
-        "DE"  : "Germany",
-        ""    : pd.NA,
-        "NONE": pd.NA
+        "USA": "United States",
+        "US": "United States",
+        "DE": "Germany",
+        "": pd.NA,
+        "NONE": pd.NA,
     }
 }
 
-def apply_value_replacements(df: pd.DataFrame,replacements: dict) -> pd.DataFrame:
+
+def apply_value_replacements(df: pd.DataFrame, replacements: dict) -> pd.DataFrame:
     """
     Apply value mappings to multiple columns.
 
@@ -97,24 +95,20 @@ def apply_value_replacements(df: pd.DataFrame,replacements: dict) -> pd.DataFram
     df = df.copy()
 
     for column, mapping in replacements.items():
-
         if column not in df.columns:
             logger.warning(f"[REPLACEMENT WARNING] Column '{column}' not found.")
             continue
 
-        df.loc[:, column] = (
-            df[column]
-            .str.strip()
-            .replace(mapping)
-        )
+        df.loc[:, column] = df[column].str.strip().replace(mapping)
 
     return df
 
 
 #! Drop technical columns that are not needed in the silver layer
-def drop_technical_columns(df: pd.DataFrame,drop_columns = "raw_row") -> pd.DataFrame:
+def drop_technical_columns(df: pd.DataFrame, drop_columns="raw_row") -> pd.DataFrame:
     df = df.drop(columns=drop_columns, errors="ignore")
     return df
+
 
 def transform_erp_cid_column(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
@@ -123,38 +117,39 @@ def transform_erp_cid_column(df: pd.DataFrame) -> pd.DataFrame:
     df["cid"] = df["cid"].astype(str).str.replace("-", "", regex=False)
     return df
 
-def run_customer_pipeline()-> None:
+
+def run_customer_pipeline() -> None:
     logger.info("Starting ERP Customers Silver Pipeline")
     try:
         df_customer = extract_from_bronze("erp_cust_az12")
         logger.info(f"Extracted {len(df_customer)} records from bronze.")
-        
+
         df_customer = enforce_schema(df_customer, schema_customer)
         logger.info("Schema enforcement completed.")
-        
+
         df_customer = standardize_customer_id(df_customer)
         logger.info("Customer ID standardization completed.")
-        
+
         df_customer = apply_value_replacements(df_customer, customer_replacemts)
         df_customer["gender_raw"] = df_customer["gender_raw"].fillna("n/a")
         logger.info("Value replacements applied.")
-        
+
         df_customer = drop_technical_columns(df_customer)
         df_customer = df_customer.drop(columns=["ingest_id"], errors="ignore")
-        df_customer = df_customer.drop_duplicates(subset=["cid"], keep="last")
         logger.info("Technical columns dropped.")
-        
+
         #! Save to silver layer
         df_customer["loaded_at"] = pd.Timestamp.now()
-        load_to_silver(
-            df_customer,
-            "erp_cust_az12",
-            get_engine("silver"),
+        df_customer.to_sql(
+            name = "erp_cust_az12",
+            con  = get_engine("silver"),
+            if_exists = "replace",
+            index=False,
             dtype={
-                "cid" : String(100),
+                "cid": String(100),
                 "birth_date_raw": Date(),
                 "gender_raw": String(50),
-                "loaded_at": DateTime()
+                "loaded_at": DateTime(),
             },
             chunksize=1000,
         )
@@ -163,22 +158,22 @@ def run_customer_pipeline()-> None:
         logger.error(f"Pipeline failed: {e}", exc_info=True)
 
 
-def run_location_pipeline()-> None:
+def run_location_pipeline() -> None:
     logger.info("Starting ERP Customer Locations Silver Pipeline")
     try:
         df_location = extract_from_bronze("erp_location_a101")
-        logger.info(f"Extracted {len(df_location)} records from bronze for location data.")
-        
+        logger.info(
+            f"Extracted {len(df_location)} records from bronze for location data."
+        )
+
         df_location = enforce_schema(df_location, schema_location)
         logger.info("Schema enforcement completed for location data.")
-        
+
         df_location = apply_value_replacements(df_location, location_replacements)
         df_location["country_name"] = df_location["country_name"].fillna("n/a")
         logger.info("Value replacements applied for location data.")
-        
+
         df_location = drop_technical_columns(df_location)
-        df_location = df_location.drop(columns=["ingest_id"], errors="ignore")
-        df_location = df_location.drop_duplicates(subset=["cid"], keep="last")
         logger.info("Technical columns dropped for location data.")
 
         df_location = transform_erp_cid_column(df_location)
@@ -186,14 +181,15 @@ def run_location_pipeline()-> None:
 
         #! Save to silver layer
         df_location["loaded_at"] = pd.Timestamp.now()
-        load_to_silver(
-            df_location,
-            "erp_location_a101",
-            get_engine("silver"),
+        df_location.to_sql(
+            name="erp_location_a101",
+            con=get_engine("silver"),
+            if_exists="replace",
+            index=False,
             dtype={
                 "cid": String(100),
                 "country_name": String(255),
-                "loaded_at": DateTime()
+                "loaded_at": DateTime(),
             },
             chunksize=1000,
         )
@@ -201,34 +197,36 @@ def run_location_pipeline()-> None:
     except Exception as e:
         logger.error(f"Location pipeline failed: {e}", exc_info=True)
 
-def run_category_pipeline()-> None:
+
+def run_category_pipeline() -> None:
     logger.info("Starting ERP Product Categories Silver Pipeline")
     try:
         df_category = extract_from_bronze("erp_px_cat_g1v2")
         logger.info(f"Extracted {len(df_category)} records from bronze.")
-        
+
         df_category = drop_technical_columns(df_category)
         df_category = df_category.drop(columns=["ingest_id"], errors="ignore")
-        df_category = df_category.drop_duplicates(subset=["id"], keep="last")
         logger.info("Technical columns dropped for category data.")
-    
+
         df_category["loaded_at"] = pd.Timestamp.now()
-        load_to_silver(
-            df_category,
-            "erp_px_cat_g1v2",
-            get_engine("silver"),
+        df_category.to_sql(
+            name   = "erp_px_cat_g1v2",
+            con  = get_engine("silver"),
+            if_exists = "replace",
+            index=False,
             dtype={
-                "id" : String(100),
+                "id": String(100),
                 "cat": String(100),
                 "subcat": String(100),
                 "maintenance_raw": String(100),
-                "loaded_at": DateTime()
+                "loaded_at": DateTime(),
             },
             chunksize=1000,
         )
         logger.info("ERP Product Categories Silver Pipeline completed successfully.")
-    except Exception as e:  
+    except Exception as e:
         logger.error(f"Category pipeline failed: {e}", exc_info=True)
+
 
 if __name__ == "__main__":
     run_customer_pipeline()

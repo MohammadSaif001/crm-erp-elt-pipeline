@@ -67,12 +67,13 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Set the database values in `.env`, then load them and start Streamlit:
+Set the database values in `.env`, then start the FastAPI dashboard:
 
 ```bash
-set -a; source .env; set +a
-streamlit run app.py
+uvicorn app:app --reload --port 8000
 ```
+
+Open <http://127.0.0.1:8000/> in your browser.
 
 `PIPELINE_LOG_PATH` is optional. When set, the dashboard displays the latest pipeline log; otherwise the log section shows an empty state.
 
@@ -82,5 +83,5 @@ The pipeline validates null values, duplicate keys, row counts, and foreign-key 
 
 ## Notes on Git
 
-- Keep `configs/db_config.json`, `.env`, and `.streamlit/secrets.toml` private.
-- Commit shared configuration such as `configs/pipeline_config.yaml` and `.streamlit/config.toml`.
+- Keep `configs/db_config.json` and `.env` private.
+- Commit shared configuration such as `configs/pipeline_config.yaml`.

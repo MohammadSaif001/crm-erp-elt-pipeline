@@ -7,10 +7,13 @@ Catches schema drift (missing/extra columns, wrong formats) early.
 Usage:
     from extract.validate_schema import validate_all_schemas, validate_schema
 """
-import pandas as pd
-from src.core.logger import setup_logger
-from src.core.paths import get_raw_data_path
 
+import pandas as pd
+
+from src.core.logger import setup_logger
+from src.extract.read_csv_files import read_source_file
+
+from src.core.paths import get_raw_data_path
 
 logger = setup_logger(__name__.split(".")[-1])
 
@@ -24,6 +27,7 @@ def _read_source_file(source_folder: str, file_name: str) -> pd.DataFrame:
     df.columns = df.columns.str.strip().str.lower()
     return df
 
+
 # Expected columns per source table (after header normalization: stripped + lowered).
 # These match what the bronze layer expects.
 EXPECTED_SCHEMAS = {
@@ -31,25 +35,41 @@ EXPECTED_SCHEMAS = {
         "source": "source_crm",
         "file_name": "cust_info.csv",
         "required_columns": [
-            "cst_id", "cst_key", "cst_firstname", "cst_lastname",
-            "cst_marital_status", "cst_gndr", "cst_create_date",
+            "cst_id",
+            "cst_key",
+            "cst_firstname",
+            "cst_lastname",
+            "cst_marital_status",
+            "cst_gndr",
+            "cst_create_date",
         ],
     },
     "crm_prd_info": {
         "source": "source_crm",
         "file_name": "prd_info.csv",
         "required_columns": [
-            "prd_id", "prd_key", "prd_nm", "prd_cost",
-            "prd_line", "prd_start_dt", "prd_end_dt",
+            "prd_id",
+            "prd_key",
+            "prd_nm",
+            "prd_cost",
+            "prd_line",
+            "prd_start_dt",
+            "prd_end_dt",
         ],
     },
     "crm_sales_details": {
         "source": "source_crm",
         "file_name": "sales_details.csv",
         "required_columns": [
-            "sls_ord_num", "sls_prd_key", "sls_cust_id",
-            "sls_order_dt", "sls_ship_dt", "sls_due_dt",
-            "sls_sales", "sls_quantity", "sls_price",
+            "sls_ord_num",
+            "sls_prd_key",
+            "sls_cust_id",
+            "sls_order_dt",
+            "sls_ship_dt",
+            "sls_due_dt",
+            "sls_sales",
+            "sls_quantity",
+            "sls_price",
         ],
     },
     "erp_cust_az12": {
@@ -97,7 +117,7 @@ def validate_schema(
 
     if df is None:
         try:
-            df = _read_source_file(spec["source"], spec["file_name"])
+            df = read_source_file(spec["source"], spec["file_name"])
         except FileNotFoundError as e:
             return {
                 "table": table_name,
@@ -112,13 +132,9 @@ def validate_schema(
     status = "PASS" if not missing else "FAIL"
 
     if missing:
-        logger.warning(
-            f"[SCHEMA] {table_name}: missing columns {sorted(missing)}"
-        )
+        logger.warning(f"[SCHEMA] {table_name}: missing columns {sorted(missing)}")
     if extra:
-        logger.info(
-            f"[SCHEMA] {table_name}: extra columns {sorted(extra)} (ignored)"
-        )
+        logger.info(f"[SCHEMA] {table_name}: extra columns {sorted(extra)} (ignored)")
 
     return {
         "table": table_name,
@@ -175,12 +191,14 @@ def validate_data_types(df: pd.DataFrame, rules: dict[str, str]) -> list[dict]:
             continue
 
         if not invalid.empty:
-            issues.append({
-                "column": col,
-                "expected_type": expected_type,
-                "invalid_count": len(invalid),
-                "sample_invalid": invalid.head(5).tolist(),
-            })
+            issues.append(
+                {
+                    "column": col,
+                    "expected_type": expected_type,
+                    "invalid_count": len(invalid),
+                    "sample_invalid": invalid.head(5).tolist(),
+                }
+            )
             logger.warning(
                 f"[DTYPE] {col}: {len(invalid)} values cannot be parsed as {expected_type}"
             )
@@ -193,9 +211,9 @@ def run_schema_validation_report() -> bool:
     results = validate_all_schemas()
     all_pass = all(r["status"] == "PASS" for r in results)
 
-    print(f"\n{'='*60}")
-    print(f"  SCHEMA VALIDATION REPORT")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("  SCHEMA VALIDATION REPORT")
+    print(f"{'=' * 60}")
     for r in results:
         icon = "✓" if r["status"] == "PASS" else ("✗" if r["status"] == "FAIL" else "⚠")
         print(f"  {icon} {r['table']}: {r['status']}")
@@ -205,13 +223,14 @@ def run_schema_validation_report() -> bool:
             print(f"      Extra:   {r['extra_columns']}")
         if r.get("error"):
             print(f"      Error:   {r['error']}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Overall: {'ALL PASSED' if all_pass else 'ISSUES FOUND'}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     return all_pass
 
 
 if __name__ == "__main__":
     from src.core.logger import setup_logger
+
     setup_logger("validate_schema")
     run_schema_validation_report()

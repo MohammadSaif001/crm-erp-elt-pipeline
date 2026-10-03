@@ -8,6 +8,7 @@ Usage:
     cd d:\\data_engineering_project
     python -m pytest tests/test_transformations.py -v
 """
+
 import sys
 from pathlib import Path
 
@@ -17,37 +18,54 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 # Import transformation functions from each silver module
+from src.extract.validate_schema import validate_schema
 from src.silver.crm.crm_customers import (
-    normalize_data as cust_normalize,
-    enforce_schema as cust_enforce_schema,
-    standardize_data as cust_standardize,
     deduplicate_latest_by_date,
     remove_null_primary_keys,
     schema_customer,
 )
+from src.silver.crm.crm_customers import (
+    enforce_schema as cust_enforce_schema,
+)
+from src.silver.crm.crm_customers import (
+    normalize_data as cust_normalize,
+)
+from src.silver.crm.crm_customers import (
+    standardize_data as cust_standardize,
+)
+from src.silver.crm.crm_products import (
+    enforce_schema as prod_enforce_schema,
+)
 from src.silver.crm.crm_products import (
     normalize_data as prod_normalize,
-    enforce_schema as prod_enforce_schema,
-    standardize_data as prod_standardize,
-    transform_crm_products,
+)
+from src.silver.crm.crm_products import (
     schema_products,
+    transform_crm_products,
+)
+from src.silver.crm.crm_products import (
+    standardize_data as prod_standardize,
+)
+from src.silver.crm.crm_sales import (
+    clean_sales_data,
+    datetime_conversion,
+    schema_sales,
+    validate_data,
+)
+from src.silver.crm.crm_sales import (
+    enforce_schema as sales_enforce_schema,
 )
 from src.silver.crm.crm_sales import (
     normalize_data as sales_normalize,
-    enforce_schema as sales_enforce_schema,
-    datetime_conversion,
-    validate_data,
-    clean_sales_data,
-    schema_sales,
 )
 from src.silver.erp.erp_customers import (
     standardize_customer_id,
     apply_value_replacements,
-    transform_erp_cid_column,
     customer_replacemts,
     location_replacements,
+    standardize_customer_id,
+    transform_erp_cid_column,
 )
-from src.extract.validate_schema import validate_schema
 
 
 # ==========================================================================
@@ -55,46 +73,52 @@ from src.extract.validate_schema import validate_schema
 # ==========================================================================
 def _make_customer_df():
     """Minimal customer dataframe mimicking bronze output."""
-    return pd.DataFrame({
-        "raw_row": ['{"a":1}', '{"b":2}', '{"c":3}'],
-        "ingest_id": [1, 2, 3],
-        "cst_id": ["1", "2", "3"],
-        "cst_key": ["AW00011000", "AW00011001", "AW00011002"],
-        "cst_firstname": ["  john  ", "  JANE  ", "  bob  "],
-        "cst_lastname": ["  doe  ", "  SMITH  ", "  jones  "],
-        "cst_marital_status": ["m", "s", "m"],
-        "cst_gndr": ["M", "F", "M"],
-        "cst_create_date_raw": ["2024-01-01", "2024-02-15", "2024-03-20"],
-    })
+    return pd.DataFrame(
+        {
+            "raw_row": ['{"a":1}', '{"b":2}', '{"c":3}'],
+            "ingest_id": [1, 2, 3],
+            "cst_id": ["1", "2", "3"],
+            "cst_key": ["AW00011000", "AW00011001", "AW00011002"],
+            "cst_firstname": ["  john  ", "  JANE  ", "  bob  "],
+            "cst_lastname": ["  doe  ", "  SMITH  ", "  jones  "],
+            "cst_marital_status": ["m", "s", "m"],
+            "cst_gndr": ["M", "F", "M"],
+            "cst_create_date_raw": ["2024-01-01", "2024-02-15", "2024-03-20"],
+        }
+    )
 
 
 def _make_product_df():
-    return pd.DataFrame({
-        "raw_row": ['{"r":1}', '{"r":2}'],
-        "prd_id": ["1", "2"],
-        "prd_key": ["CO_PD-FR-R92B-56", "CO_PD-FR-R92B-57"],
-        "prd_name": ["  mountain bike  ", "  road bike  "],
-        "prd_cost": ["100.50", "200.00"],
-        "prd_line": ["M", "R"],
-        "prd_start_date_raw": ["2024-01-01", "2024-06-01"],
-        "prd_end_date_raw": ["2024-12-31", "2025-01-01"],
-    })
+    return pd.DataFrame(
+        {
+            "raw_row": ['{"r":1}', '{"r":2}'],
+            "prd_id": ["1", "2"],
+            "prd_key": ["CO_PD-FR-R92B-56", "CO_PD-FR-R92B-57"],
+            "prd_name": ["  mountain bike  ", "  road bike  "],
+            "prd_cost": ["100.50", "200.00"],
+            "prd_line": ["M", "R"],
+            "prd_start_date_raw": ["2024-01-01", "2024-06-01"],
+            "prd_end_date_raw": ["2024-12-31", "2025-01-01"],
+        }
+    )
 
 
 def _make_sales_df():
-    return pd.DataFrame({
-        "raw_row": ['{"s":1}', '{"s":2}', '{"s":3}'],
-        "ingest_id": [1, 2, 3],
-        "sales_ord_num": ["SO001", "SO002", "SO003"],
-        "sales_prd_key": ["P1", "P2", "P3"],
-        "sales_cust_id": ["C1", "C2", "C3"],
-        "sales_sales": ["100.0", "200.0", "-50.0"],
-        "sales_quantity": ["2", "3", "1"],
-        "sales_price": ["50.0", "66.67", "-50.0"],
-        "sales_order_date_raw": ["2024-01-01", "2024-02-01", "2024-03-01"],
-        "sales_ship_date_raw": ["2024-01-10", "2024-02-10", "2024-03-10"],
-        "sales_due_date_raw": ["2024-01-15", "2024-02-15", "2024-03-15"],
-    })
+    return pd.DataFrame(
+        {
+            "raw_row": ['{"s":1}', '{"s":2}', '{"s":3}'],
+            "ingest_id": [1, 2, 3],
+            "sales_ord_num": ["SO001", "SO002", "SO003"],
+            "sales_prd_key": ["P1", "P2", "P3"],
+            "sales_cust_id": ["C1", "C2", "C3"],
+            "sales_sales": ["100.0", "200.0", "-50.0"],
+            "sales_quantity": ["2", "3", "1"],
+            "sales_price": ["50.0", "66.67", "-50.0"],
+            "sales_order_date_raw": ["2024-01-01", "2024-02-01", "2024-03-01"],
+            "sales_ship_date_raw": ["2024-01-10", "2024-02-10", "2024-03-10"],
+            "sales_due_date_raw": ["2024-01-15", "2024-02-15", "2024-03-15"],
+        }
+    )
 
 
 # ==========================================================================
@@ -129,16 +153,18 @@ class TestCustomerNormalize:
         assert "raw_row" not in df.columns
 
     def test_null_strings_become_na(self):
-        df = pd.DataFrame({
-            "raw_row": ['{}'],
-            "cst_id": ["1"],
-            "cst_key": ["NULL"],
-            "cst_firstname": ["  "],
-            "cst_lastname": ["none"],
-            "cst_marital_status": [""],
-            "cst_gndr": ["nan"],
-            "cst_create_date_raw": ["2024-01-01"],
-        })
+        df = pd.DataFrame(
+            {
+                "raw_row": ["{}"],
+                "cst_id": ["1"],
+                "cst_key": ["NULL"],
+                "cst_firstname": ["  "],
+                "cst_lastname": ["none"],
+                "cst_marital_status": [""],
+                "cst_gndr": ["nan"],
+                "cst_create_date_raw": ["2024-01-01"],
+            }
+        )
         df = cust_enforce_schema(df, schema_customer)
         df = cust_normalize(df)
         assert pd.isna(df["cst_key"].iloc[0])
@@ -186,13 +212,15 @@ class TestBronzeSchemaValidation:
 
 class TestDeduplicateLatestByDate:
     def test_keeps_latest_record(self):
-        df = pd.DataFrame({
-            "cst_id": ["1", "1", "2"],
-            "cst_create_date_raw": pd.to_datetime(
-                ["2024-01-01", "2024-06-01", "2024-03-01"]
-            ),
-            "name": ["old", "new", "only"],
-        })
+        df = pd.DataFrame(
+            {
+                "cst_id": ["1", "1", "2"],
+                "cst_create_date_raw": pd.to_datetime(
+                    ["2024-01-01", "2024-06-01", "2024-03-01"]
+                ),
+                "name": ["old", "new", "only"],
+            }
+        )
         kept, deleted = deduplicate_latest_by_date(df, "cst_id", "cst_create_date_raw")
         assert len(kept) == 2
         assert len(deleted) == 1
@@ -201,10 +229,12 @@ class TestDeduplicateLatestByDate:
         assert row_1["name"] == "new"
 
     def test_no_duplicates_unchanged(self):
-        df = pd.DataFrame({
-            "cst_id": ["1", "2"],
-            "cst_create_date_raw": pd.to_datetime(["2024-01-01", "2024-02-01"]),
-        })
+        df = pd.DataFrame(
+            {
+                "cst_id": ["1", "2"],
+                "cst_create_date_raw": pd.to_datetime(["2024-01-01", "2024-02-01"]),
+            }
+        )
         kept, deleted = deduplicate_latest_by_date(df, "cst_id", "cst_create_date_raw")
         assert len(kept) == 2
         assert len(deleted) == 0
@@ -250,16 +280,18 @@ class TestProductStandardize:
         assert df["prd_line"].iloc[1] == "Road"
 
     def test_null_cost_filled_with_zero(self):
-        df = pd.DataFrame({
-            "raw_row": ['{}'],
-            "prd_id": ["1"],
-            "prd_key": ["K1"],
-            "prd_name": ["Test"],
-            "prd_cost": [None],
-            "prd_line": ["M"],
-            "prd_start_date_raw": ["2024-01-01"],
-            "prd_end_date_raw": [None],
-        })
+        df = pd.DataFrame(
+            {
+                "raw_row": ["{}"],
+                "prd_id": ["1"],
+                "prd_key": ["K1"],
+                "prd_name": ["Test"],
+                "prd_cost": [None],
+                "prd_line": ["M"],
+                "prd_start_date_raw": ["2024-01-01"],
+                "prd_end_date_raw": [None],
+            }
+        )
         df = prod_enforce_schema(df, schema_products)
         df = prod_normalize(df)
         df = prod_standardize(df)
@@ -268,17 +300,21 @@ class TestProductStandardize:
 
 class TestTransformCrmProducts:
     def test_cat_id_extraction(self):
-        df = pd.DataFrame({
-            "prd_key": ["CO-PD-FR-R92B-56", "HE-AD-FR-R92B-57"],
-        })
+        df = pd.DataFrame(
+            {
+                "prd_key": ["CO-PD-FR-R92B-56", "HE-AD-FR-R92B-57"],
+            }
+        )
         df = transform_crm_products(df)
         assert df["cat_id"].iloc[0] == "CO_PD"
         assert df["cat_id"].iloc[1] == "HE_AD"
 
     def test_prd_key_trimmed(self):
-        df = pd.DataFrame({
-            "prd_key": ["CO-PD-FR-R92B-56"],
-        })
+        df = pd.DataFrame(
+            {
+                "prd_key": ["CO-PD-FR-R92B-56"],
+            }
+        )
         df = transform_crm_products(df)
         # prd_key should be everything after the first 6 chars
         assert df["prd_key"].iloc[0] == "FR-R92B-56"
@@ -306,11 +342,13 @@ class TestSalesNormalize:
 
 class TestDatetimeConversion:
     def test_converts_date_columns(self):
-        df = pd.DataFrame({
-            "sales_order_date_raw": ["2024-01-01", "invalid_date"],
-            "sales_ship_date_raw": ["2024-01-10", "2024-02-10"],
-            "sales_due_date_raw": ["2024-01-15", "2024-02-15"],
-        })
+        df = pd.DataFrame(
+            {
+                "sales_order_date_raw": ["2024-01-01", "invalid_date"],
+                "sales_ship_date_raw": ["2024-01-10", "2024-02-10"],
+                "sales_due_date_raw": ["2024-01-15", "2024-02-15"],
+            }
+        )
         result = datetime_conversion(df)
         assert pd.api.types.is_datetime64_any_dtype(result["sales_order_date_raw"])
         # Invalid date becomes NaT
@@ -319,17 +357,19 @@ class TestDatetimeConversion:
 
 class TestValidateData:
     def test_separates_valid_and_invalid(self):
-        df = pd.DataFrame({
-            "sales_price": [50.0, -10.0, 30.0],
-            "sales_quantity": [2, 3, None],
-            "sales_sales": [100.0, -30.0, 90.0],
-            "sales_order_date_raw": pd.to_datetime(
-                ["2024-01-01", "2024-02-01", "2024-03-01"]
-            ),
-            "sales_ship_date_raw": pd.to_datetime(
-                ["2024-01-10", "2024-02-10", "2024-03-10"]
-            ),
-        })
+        df = pd.DataFrame(
+            {
+                "sales_price": [50.0, -10.0, 30.0],
+                "sales_quantity": [2, 3, None],
+                "sales_sales": [100.0, -30.0, 90.0],
+                "sales_order_date_raw": pd.to_datetime(
+                    ["2024-01-01", "2024-02-01", "2024-03-01"]
+                ),
+                "sales_ship_date_raw": pd.to_datetime(
+                    ["2024-01-10", "2024-02-10", "2024-03-10"]
+                ),
+            }
+        )
         valid, invalid = validate_data(df)
         assert len(valid) == 1  # only first row is fully valid
         assert len(invalid) == 2
@@ -337,21 +377,25 @@ class TestValidateData:
 
 class TestCleanSalesData:
     def test_negatives_become_absolute(self):
-        df = pd.DataFrame({
-            "sales_price": [-50.0],
-            "sales_sales": [-100.0],
-            "sales_quantity": [-2],
-        })
+        df = pd.DataFrame(
+            {
+                "sales_price": [-50.0],
+                "sales_sales": [-100.0],
+                "sales_quantity": [-2],
+            }
+        )
         result = clean_sales_data(df)
         assert result["sales_price"].iloc[0] == 50.0
         assert result["sales_quantity"].iloc[0] == 2
 
     def test_recalculates_sales(self):
-        df = pd.DataFrame({
-            "sales_price": [25.0],
-            "sales_sales": [999.0],  # wrong — should be recalculated
-            "sales_quantity": [4],
-        })
+        df = pd.DataFrame(
+            {
+                "sales_price": [25.0],
+                "sales_sales": [999.0],  # wrong — should be recalculated
+                "sales_quantity": [4],
+            }
+        )
         result = clean_sales_data(df)
         assert result["sales_sales"].iloc[0] == 100.0  # 25 * 4
 

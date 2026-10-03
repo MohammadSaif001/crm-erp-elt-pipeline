@@ -1,14 +1,6 @@
-"""
-utils/helpers.py
-==============================================================================
-General-purpose formatting, human-readable language converters, and
-log-parsing helpers for the ELT Pipeline Health Report.
-"""
-
 from __future__ import annotations
 
 import logging
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -25,7 +17,7 @@ def format_currency(value: float | None, currency: str = "$") -> str:
     return f"{currency}{value:,.2f}"
 
 
-def format_number(value: int | float | None) -> str:
+def format_number(value: float | None) -> str:
     """Format an integer count with commas, e.g. 116,300."""
     if value is None or value == "":
         return "Not available"
@@ -88,16 +80,26 @@ def humanize_check_name(check_name: str) -> str:
     return check_name
 
 
-def humanize_check_detail(check_type: str, passed: bool | None, count: int | None = 0) -> str:
+def humanize_check_detail(
+    check_type: str, passed: bool | None, count: int | None = 0
+) -> str:
     """Return plain-language result explanations for DQ checks."""
     if passed is None:
         return "Check status unverified"
     if check_type == "null":
         return "0 null violations found" if passed else f"{count} null values detected"
     if check_type == "duplicate":
-        return "0 duplicate records found" if passed else f"{count} duplicate records found"
+        return (
+            "0 duplicate records found"
+            if passed
+            else f"{count} duplicate records found"
+        )
     if check_type == "fk":
-        return "0 broken relationships" if passed else f"{count} orphaned foreign key records found"
+        return (
+            "0 broken relationships"
+            if passed
+            else f"{count} orphaned foreign key records found"
+        )
     if check_type == "row_count":
         return "Expected row counts met" if passed else "Table contains 0 rows"
     return "Passed" if passed else "Failed"
@@ -129,7 +131,14 @@ def parse_pipeline_log(max_lines: int | None = None) -> list[dict]:
             if match:
                 records.append(match.groupdict())
             elif line_str:
-                records.append({"timestamp": "", "level": "INFO", "module": "system", "message": line_str})
+                records.append(
+                    {
+                        "timestamp": "",
+                        "level": "INFO",
+                        "module": "system",
+                        "message": line_str,
+                    }
+                )
     except OSError as exc:
         logger.error("Failed to read pipeline log: %s", exc)
         return []
@@ -158,14 +167,24 @@ def get_latest_run_details() -> dict:
     # Find the complete block for the last pipeline run.  Transformation
     # functions and pytest can append diagnostic lines after a run; those
     # lines must not be reported as part of that run's health summary.
-    start_indices = [i for i, r in enumerate(records) if "Pipeline start" in r.get("message", "")]
+    start_indices = [
+        i for i, r in enumerate(records) if "Pipeline start" in r.get("message", "")
+    ]
     if start_indices:
         start_index = start_indices[-1]
         completion_index = next(
-            (i for i in range(start_index, len(records)) if "Pipeline complete" in records[i].get("message", "")),
+            (
+                i
+                for i in range(start_index, len(records))
+                if "Pipeline complete" in records[i].get("message", "")
+            ),
             None,
         )
-        run_block = records[start_index:completion_index + 1] if completion_index is not None else records[start_index:]
+        run_block = (
+            records[start_index : completion_index + 1]
+            if completion_index is not None
+            else records[start_index:]
+        )
     else:
         run_block = records
 
@@ -220,15 +239,19 @@ def get_latest_run_details() -> dict:
 def extract_batch_timings(records: list[dict]) -> list[dict]:
     """Extract [BATCH END] ... Total time=X.XXs lines for stage timing breakdown."""
     results = []
-    pattern = re.compile(r"\[BATCH END\]\s*(?P<name>.+?)\s*(completed)?\s*\|\s*Total time=(?P<seconds>[\d.]+)s")
+    pattern = re.compile(
+        r"\[BATCH END\]\s*(?P<name>.+?)\s*(completed)?\s*\|\s*Total time=(?P<seconds>[\d.]+)s"
+    )
     for r in records:
         m = pattern.search(r.get("message", ""))
         if m:
-            results.append({
-                "stage": m.group("name").strip(),
-                "duration_seconds": float(m.group("seconds")),
-                "timestamp": r.get("timestamp", ""),
-            })
+            results.append(
+                {
+                    "stage": m.group("name").strip(),
+                    "duration_seconds": float(m.group("seconds")),
+                    "timestamp": r.get("timestamp", ""),
+                }
+            )
     return results
 
 

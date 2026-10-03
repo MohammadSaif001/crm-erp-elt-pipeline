@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}ELT Pipeline Health — Database Health{% endblock %}
+{% block section_code %}04 / DATABASE HEALTH{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="eyebrow">04 / DATABASE HEALTH</div>
+  <h1>DATABASE HEALTH</h1>
+  <p>Connectivity and inventory across the Bronze, Silver, and Gold data stores.</p>
+</section>
+
+<!-- Section 01: Connection Status Table -->
+<div class="section-heading">
+  <span>01 / DATABASE CONNECTION STATUS</span>
+  <p class="section-note">All three layers must be reachable before a run can be considered healthy.</p>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Database</th>
+      <th style="width: 20%;">Status</th>
+      <th style="width: 25%;">Host</th>
+      <th style="width: 30%;">Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in connection_rows %}
+    <tr>
+      <td><b>{{ row.database }}</b></td>
+      <td>{{ status_badge(row.status) | safe }}</td>
+      <td><code>{{ row.host }}</code></td>
+      <td>{{ row.notes }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Section 02: Server & Driver Configuration Table -->
+<div class="section-heading">
+  <span>02 / SERVER &amp; DRIVER CONFIGURATION</span>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 40%;">Parameter</th>
+      <th style="width: 60%;">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in server_configs %}
+    <tr>
+      <td><b>{{ row.parameter }}</b></td>
+      <td><code>{{ row.value }}</code></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Section 03: Medallion Table Inventory -->
+<div class="section-heading">
+  <span>03 / MEDALLION TABLE INVENTORY</span>
+  <p class="section-note">Table counts are live database observations, not estimates.</p>
+</div>
+
+{% if inventory_rows %}
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Layer</th>
+      <th style="width: 35%;">Table / View</th>
+      <th style="width: 20%;">Rows</th>
+      <th style="width: 20%;">Health</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in inventory_rows %}
+    <tr>
+      <td><b>{{ row.layer }}</b></td>
+      <td><code>{{ row.table }}</code></td>
+      <td>{{ row.rows | format_number }}</td>
+      <td>
+        {% if row.available %}
+          <span class="status status--pass">&#10003; AVAILABLE</span>
+        {% else %}
+          <span class="status status--fail">&#215; EMPTY</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="report-note">Could not query medallion table inventory from database.</div>
+{% endif %}
+
+{% endblock %}

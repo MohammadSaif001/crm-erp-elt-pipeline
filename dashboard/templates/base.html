@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ELT Pipeline Health{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="app-body">
+  <div class="app-wrapper">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar" aria-label="Sidebar Navigation">
+      <div class="sidebar-brand">ELT<br><strong>PIPELINE HEALTH</strong></div>
+      <div class="sidebar-rule"></div>
+      
+      <div class="sidebar-label">REPORT INDEX</div>
+      <nav class="sidebar-nav">
+        <a href="/home" class="{% if active_page == 'home' %}active{% endif %}">01 &nbsp; Home</a>
+        <a href="/pipeline-run" class="{% if active_page == 'pipeline_run' %}active{% endif %}">02 &nbsp; Pipeline Run</a>
+        <a href="/data-quality" class="{% if active_page == 'data_quality' %}active{% endif %}">03 &nbsp; Data Quality</a>
+        <a href="/database-health" class="{% if active_page == 'database_health' %}active{% endif %}">04 &nbsp; Database Health</a>
+        <a href="/technical-details" class="{% if active_page == 'technical_details' %}active{% endif %}">05 &nbsp; Technical Details</a>
+      </nav>
+
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-label">SYSTEM STATUS</div>
+      <div style="font-size: 13px; font-weight: bold; margin: 6px 0 4px;">Database Status</div>
+      {% for db in db_statuses %}
+        <div class="sidebar-status">
+          <span>● {{ db.name }}</span>
+          {% if db.ok %}
+            <span class="status status--pass">&#10003; PASS</span>
+          {% else %}
+            <span class="status status--fail">&#215; FAILED</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-label">LAST REFRESH</div>
+      <div class="sidebar-time">{{ last_refreshed }}</div>
+      <form method="POST" action="/refresh?redirect_to={{ request.url.path }}">
+        <button type="submit" class="refresh-btn">[ Refresh Pipeline Report ]</button>
+      </form>
+
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-foot">INTERNAL OPERATIONS<br>BRONZE &rarr; SILVER &rarr; GOLD</div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <div class="app-container">
+        <!-- Site Header -->
+        <header class="site-header">
+          <span class="site-header__code">{% block section_code %}01{% endblock %}</span>
+          <span class="site-header__title">PIPELINE HEALTH</span>
+          <span class="site-header__meta">DATA ENGINEERING</span>
+          <span aria-hidden="true">&#8599;</span>
+        </header>
+
+        {% block content %}{% endblock %}
+
+        <footer class="report-footer">
+          ELT PIPELINE HEALTH REPORT <span>•</span> INTERNAL OPERATIONS <span>•</span> BRONZE &rarr; SILVER &rarr; GOLD
+        </footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
