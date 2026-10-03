@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pytest tests/test_transformations.py -v
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    env:
+      DB_PASSWORD: root
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: |
+          mkdir -p configs
+          printf '%s\n' '{"mysql":{"host":"127.0.0.1","port":3306,"user":"root","password":"root","bronze_db":"bronze_db","silver_db":"silver_db","gold_db":"gold_db"}}' > configs/db_config.json
+      - run: python -m src.pipeline
+      - run: pytest tests/test_pipeline.py tests/test_data_quality.py -v

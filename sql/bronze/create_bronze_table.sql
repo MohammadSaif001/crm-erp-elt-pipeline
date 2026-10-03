@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS erp_cust_az12 (
 );
 
 CREATE TABLE IF NOT EXISTS erp_location_a101 (
+  ingest_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   raw_row JSON NOT NULL,
   cid VARCHAR(100) NULL,
   country_name VARCHAR(255) NULL,

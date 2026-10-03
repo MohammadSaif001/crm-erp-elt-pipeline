@@ -16,7 +16,7 @@ From the repository root:
 
 ```bash
 python -m pip install -r dashboard/requirements.txt
-uvicorn dashboard.app:app --reload --port 8000
+python -m uvicorn dashboard.app:app --reload --port 8000
 ```
 
 Open <http://127.0.0.1:8000/>. The individual pages are available at `/home`, `/pipeline-run`, `/data-quality`, `/database-health`, and `/technical-details`.
@@ -25,7 +25,7 @@ You can also run from the `dashboard/` directory:
 
 ```bash
 python -m pip install -r requirements.txt
-uvicorn app:app --reload --port 8000
+python -m uvicorn app:app --reload --port 8000
 ```
 
 ## Configuration
@@ -43,6 +43,5 @@ dashboard/
 ├── templates/             # Jinja page templates
 ├── assets/styles.css      # Shared HTML styles
 ├── database/              # SQLAlchemy connection and query layer
-├── components/            # Pipeline health calculations
-└── utils/                 # Formatting, log parsing, and TTL caching
+└── utils/                 # Health calculations, formatting, log parsing, and TTL caching
 ```
