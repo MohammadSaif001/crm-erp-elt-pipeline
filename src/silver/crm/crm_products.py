@@ -1,11 +1,7 @@
 import pandas as pd
-<<<<<<< Updated upstream
-from src.core.database import get_engine
-=======
 from sqlalchemy import Date, DateTime, Numeric, String
 
 from src.core.database import get_engine, load_to_silver
->>>>>>> Stashed changes
 from src.core.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
@@ -124,17 +120,6 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     #! Product Line Standardization
-<<<<<<< Updated upstream
-    df["prd_line"] = (
-        df["prd_line"]
-        .str.strip().replace({
-    "R": "Road",
-	"M": "Mountain",
-	"T": "Touring",
-	"S": "Other sales"
-        })
-    )
-=======
     product_line_mapping = {
         "R": "Road",
         "M": "Mountain",
@@ -148,7 +133,6 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
             "[UNMAPPED VALUE] prd_line: %s", sorted(product_lines[unknown].unique())
         )
     df["prd_line"] = product_lines.replace(product_line_mapping)
->>>>>>> Stashed changes
     df["prd_line"] = df["prd_line"].fillna("n/a")
     df["prd_cost"] = df["prd_cost"].fillna(0)
     # df["prd_end_date_raw"] = df["prd_start_date_raw"].shift(-1) + pd.Timedelta(weeks=26)
@@ -221,9 +205,6 @@ def run_products_pipeline(table_name: str) -> None:
     df_products = normalize_data(df_products)
     df_products = standardize_data(df_products)
     df_products = transform_crm_products(df_products)
-<<<<<<< Updated upstream
-    data_quality_checks(df_products) 
-=======
     before = len(df_products)
     df_products = df_products.drop_duplicates(subset=["prd_id"], keep="last")
     if len(df_products) != before:
@@ -231,7 +212,6 @@ def run_products_pipeline(table_name: str) -> None:
             "[DEDUP] Removed %s duplicate product rows", before - len(df_products)
         )
     data_quality_checks(df_products)
->>>>>>> Stashed changes
 
     df_products = df_products.rename(
         columns={"prd_start_date_raw": "prd_start_dt", "prd_end_date_raw": "prd_end_dt"}
@@ -244,21 +224,6 @@ def run_products_pipeline(table_name: str) -> None:
         if_exists = "replace",
         index=False,
         dtype={
-<<<<<<< Updated upstream
-            "prd_id"              : String(50),
-            "prd_key"             : String(100),
-            "cat_id"              : String(100),
-            "prd_name"            : String(255),
-            "prd_line"            : String(100),
-            "prd_cost"            : Numeric(12,2),
-            "prd_start_dt"        : Date(),
-            "prd_end_dt"          : Date(),
-            "loaded_at"           : DateTime()
-         }, # type: ignore
-         chunksize=1000
-         )
-    
-=======
             "prd_id": String(50),
             "prd_key": String(100),
             "cat_id": String(100),
@@ -272,7 +237,6 @@ def run_products_pipeline(table_name: str) -> None:
         chunksize=1000,
     )
 
->>>>>>> Stashed changes
 
 if __name__ == "__main__":
     run_products_pipeline("crm_prd_info")

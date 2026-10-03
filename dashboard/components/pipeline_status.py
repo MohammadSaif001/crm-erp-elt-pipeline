@@ -7,12 +7,7 @@ and Medallion architecture tables.
 
 from __future__ import annotations
 
-<<<<<<< Updated upstream
-import streamlit as st
-
-=======
 from config import DB_SETTINGS
->>>>>>> Stashed changes
 from database.connection import test_connection
 from database.queries import compute_dq_score, get_row_counts
 from utils.helpers import get_latest_run_details

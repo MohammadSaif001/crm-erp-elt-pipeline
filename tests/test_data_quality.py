@@ -5,6 +5,8 @@ from src.database_checks.check_fk_integrity import check_fk_integrity
 from src.database_checks.check_nulls import check_nulls
 from src.database_checks.check_row_counts import compare_layers, get_row_counts
 
+pytestmark = pytest.mark.integration
+
 
 class TestDuplicates:
     """No duplicates on primary keys in silver layer."""

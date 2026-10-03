@@ -1,11 +1,7 @@
 import pandas as pd
-<<<<<<< Updated upstream
-from src.core.database import get_engine
-=======
 from sqlalchemy import Date, DateTime, String
 
 from src.core.database import get_engine, load_to_silver
->>>>>>> Stashed changes
 from src.core.logger import setup_logger
 
 logger = setup_logger("crm_customers")
@@ -124,26 +120,6 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     #! Gender Standardization
-<<<<<<< Updated upstream
-    df["cst_gndr"] = (
-        df["cst_gndr"]
-        .str.lower()
-        .map({
-            "m": "Male",
-            "f": "Female",
-        })
-    )
-
-    #!Marital Status Standardization
-    df["cst_marital_status"] = (
-        df["cst_marital_status"]
-        .str.lower()
-        .map({
-            "s": "Single",
-            "m": "Married",
-        })
-    )
-=======
     gender_mapping = {
         "m": "Male",
         "f": "Female",
@@ -169,7 +145,6 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
                 **{key.upper(): value for key, value in mapping.items()},
             }
         )
->>>>>>> Stashed changes
 
     df[["cst_gndr", "cst_marital_status"]] = df[
         ["cst_gndr", "cst_marital_status"]
@@ -226,11 +201,6 @@ def remove_null_primary_keys(df: pd.DataFrame, primary_key: str) -> pd.DataFrame
 
 def run_customers_pipeline(table_name: str) -> None:
     df_customers = extract_from_bronze(table_name)
-<<<<<<< Updated upstream
-    df_customers = enforce_schema(df_customers, schema_customer) # object → string, datetime → datetime64, etc.
-    df_customers = normalize_data(df_customers)           
-    df_customers = standardize_data(df_customers) # standardize gender and marital status values  
-=======
     df_customers = enforce_schema(
         df_customers, schema_customer
     )  # object → string, datetime → datetime64, etc.
@@ -239,7 +209,6 @@ def run_customers_pipeline(table_name: str) -> None:
     df_customers = standardize_data(
         df_customers
     )  # standardize gender and marital status values
->>>>>>> Stashed changes
     df_customers = remove_null_primary_keys(df_customers, primary_key="cst_id")
 
     data_quality_checks(
@@ -254,25 +223,6 @@ def run_customers_pipeline(table_name: str) -> None:
     )
     df_customers["loaded_at"] = pd.Timestamp.now()
 
-<<<<<<< Updated upstream
-    df_customers.to_sql(
-        name = "crm_customers_info",
-        con  = get_engine("silver"),
-         if_exists = "replace",
-         index=False,
-         dtype={
-            "cst_id"                     : String(50),
-            "cst_key"                   : String(100),
-            "cst_firstname"             : String(200),
-            "cst_lastname"              : String(200),
-            "cst_marital_status"        : String(50),
-            "cst_gender"                : String(50),
-            "cst_create_date"           : Date(),
-            "loaded_at"                 : DateTime()
-         }, # type: ignore
-         chunksize=1000
-         )
-=======
     load_to_silver(
         df_customers,
         "crm_customers_info",
@@ -289,7 +239,6 @@ def run_customers_pipeline(table_name: str) -> None:
         },
         chunksize=1000,
     )
->>>>>>> Stashed changes
 
 
 if __name__ == "__main__":
