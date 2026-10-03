@@ -3,9 +3,9 @@ from src.silver.crm.crm_customers import run_customers_pipeline
 from src.silver.crm.crm_products import run_products_pipeline
 from src.silver.crm.crm_sales import run_sales_pipeline
 from src.silver.erp.erp_customers import (
+    run_category_pipeline,
     run_customer_pipeline,
     run_location_pipeline,
-    run_category_pipeline,
 )
 
 logger = setup_logger("silver_pipeline")
@@ -13,14 +13,14 @@ logger = setup_logger("silver_pipeline")
 
 def run_silver_pipeline() -> None:
     logger.info("=" * 60)
-    logger.info(f"[START] Starting Silver Layer Pipeline")
+    logger.info("[START] Starting Silver Layer Pipeline")
 
     pipelines = [
-        ("CRM Customers",  lambda: run_customers_pipeline("crm_customers_info")),
-        ("CRM Products",   lambda: run_products_pipeline("crm_prd_info")),
-        ("CRM Sales",      lambda: run_sales_pipeline("crm_sales_details")),
-        ("ERP Customers",  run_customer_pipeline),
-        ("ERP Locations",  run_location_pipeline),
+        ("CRM Customers", lambda: run_customers_pipeline("crm_customers_info")),
+        ("CRM Products", lambda: run_products_pipeline("crm_prd_info")),
+        ("CRM Sales", lambda: run_sales_pipeline("crm_sales_details")),
+        ("ERP Customers", run_customer_pipeline),
+        ("ERP Locations", run_location_pipeline),
         ("ERP Categories", run_category_pipeline),
     ]
 

@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
+
 from src.core.database import get_engine
 from src.core.logger import setup_logger
 
@@ -29,6 +30,7 @@ DQ Check: Duplicate Detection
 
 Checks for duplicate rows on primary/unique key columns across all layers.
 """
+
 
 def check_duplicates(layer: str = "silver") -> dict:
     """
@@ -88,19 +90,21 @@ def run_duplicate_checks(layer: str = "silver") -> bool:
     results = check_duplicates(layer)
     all_pass = all(r.get("status") == "PASS" for r in results.values())
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  DUPLICATE CHECK REPORT — {layer.upper()} LAYER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for table, info in results.items():
         icon = "✓" if info["status"] == "PASS" else "✗"
         print(f"  {icon} {table}: {info['status']}")
         if info["status"] == "FAIL":
-            print(f"      Duplicates: {info['duplicate_count']} on keys {info.get('key_columns')}")
+            print(
+                f"      Duplicates: {info['duplicate_count']} on keys {info.get('key_columns')}"
+            )
         elif info["status"] == "ERROR":
             print(f"      Error: {info.get('error')}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Overall: {'ALL PASSED' if all_pass else 'ISSUES FOUND'}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     return all_pass
 
 

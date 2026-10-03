@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}ELT Pipeline Health — Home{% endblock %}
+{% block section_code %}01 / HOME{% endblock %}
+
+{% block content %}
+<!-- Section 01: Pipeline Health Status Banner -->
+<section class="hero">
+  <div>
+    <div class="eyebrow">01 / ELT PIPELINE HEALTH</div>
+    <h1>ELT PIPELINE<br>HEALTH REPORT</h1>
+    <p>Production Data Engineering<br>Medallion Architecture / Bronze &rarr; Silver &rarr; Gold</p>
+    <div class="hero-meta">LAST OBSERVED RUN<br>{{ health_info.last_run }}</div>
+  </div>
+  <div class="hero-status">
+    <strong>{{ health_info.status }}</strong>
+    <span>{% if health_info.status == 'PASS' %}&#10003;{% elif health_info.status == 'WARNING' %}!{% else %}&#215;{% endif %}</span>
+  </div>
+</section>
+
+<div class="report-note">
+  <b>WHAT HAPPENED</b><br>
+  {{ health_info.explanation }}
+</div>
+
+<!-- Section 02: Pipeline Summary Table -->
+<div class="section-heading">
+  <span>02 / PIPELINE SUMMARY</span>
+  <p class="section-note">A live roll-up of the most recent execution.</p>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 50%;">Metric</th>
+      <th style="width: 50%;">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Status</b></td>
+      <td>{{ status_badge(health_info.status) | safe }}</td>
+    </tr>
+    <tr>
+      <td><b>Last Run</b></td>
+      <td><code>{{ health_info.last_run }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Duration</b></td>
+      <td><code>{{ health_info.duration }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Records Processed</b></td>
+      <td>{{ health_info.records_processed | format_number }}</td>
+    </tr>
+    <tr>
+      <td><b>Records Loaded</b></td>
+      <td>{{ health_info.records_loaded | format_number }}</td>
+    </tr>
+    <tr>
+      <td><b>Data Quality</b></td>
+      <td><code>{{ health_info.dq_summary.total_checks }} checks / {{ health_info.dq_summary.passed_checks }} passed</code></td>
+    </tr>
+    <tr>
+      <td><b>Failed Checks</b></td>
+      <td>{{ health_info.failed_checks }}</td>
+    </tr>
+    <tr>
+      <td><b>Warnings</b></td>
+      <td>{{ health_info.warnings_count }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 03: Data Flow Architecture & Row Lineage -->
+<div class="section-heading">
+  <span>03 / DATA FLOW</span>
+  <p class="section-note">Source files move through raw ingestion, cleaning, and analytics modeling.</p>
+</div>
+
+<div class="pipeline-flow" aria-label="Source to Gold data flow">
+  <div class="flow-node">
+    <b>SOURCE</b>
+    <span>CRM / ERP</span>
+    <code>{{ lineage.source | format_number }}</code>
+    <small>source records</small>
+  </div>
+  <div class="flow-arrow"><small>INGEST</small>&rarr;</div>
+  <div class="flow-node">
+    <b>BRONZE</b>
+    <span>RAW DATA</span>
+    <code>{{ lineage.bronze | format_number }}</code>
+    <small>loaded rows</small>
+  </div>
+  <div class="flow-arrow"><small>CLEAN</small>&rarr;</div>
+  <div class="flow-node">
+    <b>SILVER</b>
+    <span>CLEAN DATA</span>
+    <code>{{ lineage.silver | format_number }}</code>
+    <small>output rows</small>
+  </div>
+  <div class="flow-arrow"><small>MODEL</small>&rarr;</div>
+  <div class="flow-node">
+    <b>GOLD</b>
+    <span>ANALYTICS</span>
+    <code>{{ lineage.gold | format_number }}</code>
+    <small>represented rows</small>
+  </div>
+</div>
+
+<div class="report-note">
+  <b>ROW LINEAGE</b><br>
+  Row counts are calculated from the source files and current database totals.
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th>Stage</th>
+      <th>Input</th>
+      <th>Output</th>
+      <th>Change</th>
+      <th>Retention</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>BRONZE</b></td>
+      <td><code>{{ lineage.source | format_number }}</code></td>
+      <td><code>{{ lineage.bronze | format_number }}</code></td>
+      <td><code>{{ lineage.diff_source_bronze }} not loaded</code></td>
+      <td><code>{{ lineage.retention_source_bronze }}</code></td>
+      <td>Source files were ingested into the raw layer.</td>
+    </tr>
+    <tr>
+      <td><b>SILVER</b></td>
+      <td><code>{{ lineage.bronze | format_number }}</code></td>
+      <td><code>{{ lineage.silver | format_number }}</code></td>
+      <td><code>{{ lineage.diff_bronze_silver }} transformed</code></td>
+      <td><code>{{ lineage.retention_bronze_silver }}</code></td>
+      <td>Records were cleaned, normalized, deduplicated, and validated.</td>
+    </tr>
+    <tr>
+      <td><b>GOLD</b></td>
+      <td><code>{{ lineage.silver | format_number }}</code></td>
+      <td><code>{{ lineage.gold | format_number }}</code></td>
+      <td>Row count not directly comparable</td>
+      <td>—</td>
+      <td>Silver data was modeled into analytics-ready dimensions and facts.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 04: Data Quality Report -->
+<div class="section-heading">
+  <span>04 / DATA QUALITY</span>
+  <p class="section-note">Validation results explain whether data is fit for downstream use.</p>
+</div>
+
+<div class="report-note">
+  <b>{{ dq.total_checks }} checks executed</b><br>
+  {{ dq.passed_checks }} passed · {{ dq.warning_checks }} warnings · {{ dq.failed_checks }} failed. Quality score: {{ dq.score }}%.
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 35%;">Check Category</th>
+      <th style="width: 20%;">Result</th>
+      <th style="width: 45%;">Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>NULL checks</b></td>
+      <td>{{ status_badge(dq_categories.null_status) | safe }}</td>
+      <td>{{ dq_categories.null_detail }}</td>
+    </tr>
+    <tr>
+      <td><b>Duplicate checks</b></td>
+      <td>{{ status_badge(dq_categories.duplicate_status) | safe }}</td>
+      <td>{{ dq_categories.duplicate_detail }}</td>
+    </tr>
+    <tr>
+      <td><b>FK integrity</b></td>
+      <td>{{ status_badge(dq_categories.fk_status) | safe }}</td>
+      <td>{{ dq_categories.fk_detail }}</td>
+    </tr>
+    <tr>
+      <td><b>Row count checks</b></td>
+      <td>{{ status_badge(dq_categories.count_status) | safe }}</td>
+      <td>{{ dq_categories.count_detail }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 05: Database Health -->
+<div class="section-heading">
+  <span>05 / DATABASE HEALTH</span>
+  <p class="section-note">Reachability is checked against each configured pipeline database.</p>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Database</th>
+      <th style="width: 20%;">Status</th>
+      <th style="width: 55%;">Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in db_health_rows %}
+    <tr>
+      <td><b>{{ row.Database }}</b></td>
+      <td>{{ status_badge(row.Status) | safe }}</td>
+      <td>{{ row.Notes }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not health_info.dbs_ok %}
+<div class="action-box action-box--fail">
+  <b>Database Outage Notice:</b> One or more pipeline databases are unavailable. The Gold layer could not be verified.
+</div>
+{% endif %}
+
+<!-- Section 06: Latest Execution Narrative -->
+<div class="section-heading">
+  <span>06 / WHAT HAPPENED</span>
+  <p class="section-note">The most recent logged execution, expressed as an operational narrative.</p>
+</div>
+
+<table class="report-table">
+  <tbody>
+    <tr>
+      <td style="width: 25%;"><b>Started</b></td>
+      <td style="width: 75%;"><code>{{ latest_run.start_time }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Finished</b></td>
+      <td><code>{{ latest_run.end_time }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Duration</b></td>
+      <td><code>{{ latest_run.duration }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Status</b></td>
+      <td>{{ status_badge(latest_run.status) | safe }}</td>
+    </tr>
+    <tr>
+      <td><b>Bronze layer</b></td>
+      <td>{{ status_badge('PASS') | safe }} &nbsp; {{ counts.bronze | format_number }} rows — Raw source data was successfully ingested.</td>
+    </tr>
+    <tr>
+      <td><b>Silver layer</b></td>
+      <td>{{ status_badge('PASS') | safe }} &nbsp; {{ counts.silver | format_number }} rows — Bronze records reached transformation.</td>
+    </tr>
+    <tr>
+      <td><b>Gold layer</b></td>
+      <td>{{ status_badge('PASS') | safe }} &nbsp; {{ counts.gold | format_number }} rows — Analytics-ready records were loaded.</td>
+    </tr>
+    <tr>
+      <td><b>Result</b></td>
+      <td>{{ latest_run.result_summary }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 07: Attention Required -->
+<div class="section-heading">
+  <span>07 / ATTENTION REQUIRED</span>
+</div>
+
+{% if attention_items %}
+<div class="action-box action-box--warning">
+  <b>Review required.</b><br>
+  {% for item in attention_items %}
+    <div>• {{ item }}</div>
+  {% endfor %}
+  <br>
+  Review the live Data Quality results before the next production execution.
+</div>
+{% else %}
+<div class="action-box action-box--pass">
+  <b>No action required.</b><br>
+  The latest pipeline run completed successfully and all critical checks passed.
+</div>
+{% endif %}
+
+<!-- Section 08: Technical Details Teaser -->
+<div class="section-heading">
+  <span>08 / TECHNICAL DETAILS</span>
+  <p class="section-note">Logs, runtime configuration, and schema references are kept secondary to this health report.</p>
+</div>
+
+<a href="/technical-details" class="page-link-inline">Open technical details and execution logs &rarr;</a>
+{% endblock %}

@@ -1,8 +1,9 @@
 import pytest
+
 from src.database_checks.check_duplicates import check_duplicates
-from src.database_checks.check_nulls import check_nulls
-from src.database_checks.check_row_counts import get_row_counts, compare_layers
 from src.database_checks.check_fk_integrity import check_fk_integrity
+from src.database_checks.check_nulls import check_nulls
+from src.database_checks.check_row_counts import compare_layers, get_row_counts
 
 
 class TestDuplicates:
@@ -15,6 +16,7 @@ class TestDuplicates:
                 f"Silver table '{table}' has {info.get('duplicate_count', '?')} duplicate rows"
             )
 
+
 """
 Data Quality Tests
 -------------------
@@ -24,6 +26,7 @@ Usage:
     cd d:\\data_engineering_project
     python -m pytest tests/test_data_quality.py -v
 """
+
 
 class TestNulls:
     """Critical columns must not have NULLs."""

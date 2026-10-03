@@ -29,3 +29,6 @@ visual_rep/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Jupyter Notebook
+*.ipynb 

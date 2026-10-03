@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}ELT Pipeline Health — Pipeline Run{% endblock %}
+{% block section_code %}02 / PIPELINE RUN{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="eyebrow">02 / PIPELINE RUN</div>
+  <h1>PIPELINE RUN</h1>
+  <p>A detailed view of the latest execution: when it ran, what completed, and which events need review.</p>
+</section>
+
+<!-- Section 01: Latest Run Metrics -->
+<div class="section-heading">
+  <span>01 / LATEST RUN METRICS</span>
+</div>
+
+<table class="report-table">
+  <tbody>
+    <tr>
+      <td style="width: 30%;"><b>Execution Status</b></td>
+      <td style="width: 70%;">{{ status_badge(run_info.status) | safe }}</td>
+    </tr>
+    <tr>
+      <td><b>Start Timestamp</b></td>
+      <td><code>{{ run_info.start_time }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Finish Timestamp</b></td>
+      <td><code>{{ run_info.end_time }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Duration</b></td>
+      <td><code>{{ run_info.duration }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Log File Path</b></td>
+      <td><code>{{ log_file_path }}</code></td>
+    </tr>
+    <tr>
+      <td><b>Result Summary</b></td>
+      <td>{{ run_info.result_summary }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 02: Stage Timing Breakdown -->
+<div class="section-heading">
+  <span>02 / STAGE TIMING BREAKDOWN</span>
+  <p class="section-note">Recorded batch completion times from the latest run.</p>
+</div>
+
+{% if timings %}
+<table class="report-table">
+  <thead>
+    <tr>
+      <th style="width: 40%;">Pipeline Stage / Table</th>
+      <th style="width: 30%;">Duration</th>
+      <th style="width: 30%;">Timestamp</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in timings %}
+    <tr>
+      <td><b>{{ t.stage }}</b></td>
+      <td><code>{{ "%.2f"|format(t.duration_seconds) }}s</code></td>
+      <td><code>{{ t.timestamp }}</code></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="report-note">No detailed stage batch timings recorded for the latest run.</div>
+{% endif %}
+
+<!-- Section 03: Execution Log -->
+<div class="section-heading">
+  <span>03 / EXECUTION LOG</span>
+  <p class="section-note">Raw operational events from the latest logged run.</p>
+</div>
+
+{% if log_text %}
+<div class="log-box">{{ log_text }}</div>
+{% else %}
+<div class="report-note">No log events found for the latest run.</div>
+{% endif %}
+
+{% endblock %}

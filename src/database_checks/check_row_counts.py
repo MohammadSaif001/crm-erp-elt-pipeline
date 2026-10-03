@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
+
 from src.core.database import get_engine
 from src.core.logger import setup_logger
 
@@ -8,12 +9,20 @@ logger = setup_logger("dq_check_row_counts")
 # Tables that should exist in each layer
 LAYER_TABLES = {
     "bronze": [
-        "crm_customers_info", "crm_prd_info", "crm_sales_details",
-        "erp_cust_az12", "erp_location_a101", "erp_px_cat_g1v2",
+        "crm_customers_info",
+        "crm_prd_info",
+        "crm_sales_details",
+        "erp_cust_az12",
+        "erp_location_a101",
+        "erp_px_cat_g1v2",
     ],
     "silver": [
-        "crm_customers_info", "crm_prd_info", "crm_sales_details",
-        "erp_cust_az12", "erp_location_a101", "erp_px_cat_g1v2",
+        "crm_customers_info",
+        "crm_prd_info",
+        "crm_sales_details",
+        "erp_cust_az12",
+        "erp_location_a101",
+        "erp_px_cat_g1v2",
     ],
     "gold": ["dim_customers", "dim_products", "fact_sales"],
 }
@@ -24,6 +33,8 @@ DQ Check: Row Count Validation
 Ensures tables are non-empty and compares row counts between layers
 (e.g. bronze vs silver) to detect unexpected data loss.
 """
+
+
 def get_row_counts(layer: str) -> dict:
     """Return { table_name: row_count } for all tables in a layer."""
     tables = LAYER_TABLES.get(layer, [])
@@ -104,28 +115,32 @@ def run_row_count_report() -> bool:
     report = check_row_counts()
     all_ok = True
 
-    print(f"\n{'='*60}")
-    print(f"  ROW COUNT REPORT — ALL LAYERS")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("  ROW COUNT REPORT — ALL LAYERS")
+    print(f"{'=' * 60}")
 
     for layer, tables in report.items():
         print(f"\n  [{layer.upper()}]")
         for table, info in tables.items():
-            icon = "✓" if info["status"] == "OK" else ("⚠" if info["status"] == "WARN" else "✗")
+            icon = (
+                "✓"
+                if info["status"] == "OK"
+                else ("⚠" if info["status"] == "WARN" else "✗")
+            )
             print(f"    {icon} {table}: {info['count']} rows")
             if info["status"] != "OK":
                 all_ok = False
 
     # Cross-layer comparison
-    print(f"\n  [BRONZE → SILVER COMPARISON]")
+    print("\n  [BRONZE → SILVER COMPARISON]")
     comp = compare_layers("bronze", "silver")
     for table, info in comp.items():
         delta = f"{info['delta_pct']}%" if info["delta_pct"] is not None else "N/A"
         print(f"    {table}: {info['bronze_count']} → {info['silver_count']} ({delta})")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Overall: {'ALL OK' if all_ok else 'ISSUES FOUND'}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     return all_ok
 
 

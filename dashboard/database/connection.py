@@ -13,25 +13,27 @@ crashing the app.
 from __future__ import annotations
 
 import logging
+<<<<<<< Updated upstream
+=======
+from functools import cache
+>>>>>>> Stashed changes
 
 import pandas as pd
-import streamlit as st
-from sqlalchemy import create_engine, text
+from config import DB_SETTINGS
+from sqlalchemy import bindparam, create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-
-from config import DB_SETTINGS
+from utils.cache import register_cache_clearer
 
 logger = logging.getLogger("dashboard.database")
 
 
-@st.cache_resource(show_spinner=False)
+@cache
 def get_engine(database: str = DB_SETTINGS.gold_db) -> Engine:
     """
     Return a cached SQLAlchemy engine for the given database.
 
-    Cached via `st.cache_resource` so the connection pool is created once
-    per Streamlit session/process rather than on every script rerun.
+    Cached per process so the connection pool is reused across requests.
 
     Args:
         database: Logical database name (defaults to the Gold layer DB).
@@ -49,6 +51,9 @@ def get_engine(database: str = DB_SETTINGS.gold_db) -> Engine:
     )
 
 
+register_cache_clearer(get_engine.cache_clear)
+
+
 def test_connection(database: str = DB_SETTINGS.gold_db) -> tuple[bool, str]:
     """
     Verify connectivity to a database.
@@ -64,6 +69,7 @@ def test_connection(database: str = DB_SETTINGS.gold_db) -> tuple[bool, str]:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return True, f"Connected to `{database}`"
+    
     except OperationalError as exc:
         logger.error("Database connection failed for %s: %s", database, exc)
         return False, f"Connection failed: {exc.orig if hasattr(exc, 'orig') else exc}"
@@ -72,7 +78,9 @@ def test_connection(database: str = DB_SETTINGS.gold_db) -> tuple[bool, str]:
         return False, f"Database error: {exc}"
 
 
-def run_query(sql: str, database: str = DB_SETTINGS.gold_db, params: dict | None = None) -> pd.DataFrame:
+def run_query(
+    sql: str, database: str = DB_SETTINGS.gold_db, params: dict | None = None
+) -> pd.DataFrame:
     """
     Execute a read-only SQL query and return the result as a DataFrame.
 
@@ -89,12 +97,19 @@ def run_query(sql: str, database: str = DB_SETTINGS.gold_db, params: dict | None
     try:
         engine = get_engine(database)
         with engine.connect() as conn:
-            return pd.read_sql(text(sql), conn, params=params or {})
+            statement = text(sql)
+            query_params = params or {}
+            expanding_params = [
+                bindparam(name, expanding=True)
+                for name, value in query_params.items()
+                if isinstance(value, (list, tuple, set))
+            ]
+            if expanding_params:
+                statement = statement.bindparams(*expanding_params)
+            return pd.read_sql(statement, conn, params=query_params)
     except SQLAlchemyError as exc:
         logger.error("Query failed against %s: %s | SQL=%s", database, exc, sql)
-        st.session_state.setdefault("db_errors", []).append(str(exc))
         return pd.DataFrame()
-    except Exception as exc:  # noqa: BLE001 — surface any unexpected failure safely
+    except Exception:
         logger.exception("Unexpected error running query against %s", database)
-        st.session_state.setdefault("db_errors", []).append(str(exc))
         return pd.DataFrame()
