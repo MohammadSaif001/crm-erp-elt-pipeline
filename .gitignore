@@ -5,8 +5,7 @@
 !**/.env.example
 
 # database credentials
-configs/*
-configs/pipeline_config.yaml
+configs/db_config.json
 
 # lib
 lib/
