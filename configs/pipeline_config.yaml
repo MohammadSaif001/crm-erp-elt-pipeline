@@ -1,0 +1,20 @@
+bronze:
+  targets:
+    - name: crm_customers_info
+      source: source_crm
+      file_name: cust_info.csv
+    - name: crm_prd_info
+      source: source_crm
+      file_name: prd_info.csv
+    - name: crm_sales_details
+      source: source_crm
+      file_name: sales_details.csv
+    - name: erp_cust_az12
+      source: source_erp
+      file_name: CUST_AZ12.csv
+    - name: erp_location_a101
+      source: source_erp
+      file_name: LOC_A101.csv
+    - name: erp_px_cat_g1v2
+      source: source_erp
+      file_name: PX_CAT_G1V2.csv
