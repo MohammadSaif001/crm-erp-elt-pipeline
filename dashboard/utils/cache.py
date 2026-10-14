@@ -1,5 +1,3 @@
-"""Small process-local TTL cache for FastAPI dashboard data."""
-
 from __future__ import annotations
 
 import datetime as dt

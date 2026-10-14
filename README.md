@@ -141,6 +141,12 @@ uv run uvicorn dashboard.app:app --reload --port 8000
 
 Open <http://127.0.0.1:8000/>. Available pages:
 
+The dashboard can also be launched through the pipeline CLI:
+
+```bash
+uv run python -m src.pipeline --run-dashboard
+```
+
 | Page | URL | Purpose |
 | --- | --- | --- |
 | Home | `/home` | Overall pipeline health and row lineage |

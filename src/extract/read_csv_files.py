@@ -1,5 +1,7 @@
 import os
+
 import pandas as pd
+
 from src.core.config import load_pipeline_config
 from src.core.logger import setup_logger
 from src.core.paths import get_raw_data_path
@@ -33,10 +35,7 @@ def read_source_file(source_folder: str, file_name: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path, dtype=str)
     df.columns = df.columns.str.strip().str.lower()
 
-    logger.info(
-        f"[EXTRACT] Read {file_name} from {source_folder} | "
-        f"Shape: {df.shape}"
-    )
+    logger.info(f"[EXTRACT] Read {file_name} from {source_folder} | Shape: {df.shape}")
     return df
 
 
@@ -100,20 +99,23 @@ def get_source_file_info() -> list[dict]:
             except Exception:
                 rows = -1
 
-        info.append({
-            "name": target["name"],
-            "source": target["source"],
-            "file_name": target["file_name"],
-            "path": csv_path,
-            "exists": exists,
-            "rows": rows,
-        })
+        info.append(
+            {
+                "name": target["name"],
+                "source": target["source"],
+                "file_name": target["file_name"],
+                "path": csv_path,
+                "exists": exists,
+                "rows": rows,
+            }
+        )
 
     return info
 
 
 if __name__ == "__main__":
     from src.core.logger import setup_logger
+
     setup_logger("read_csv_files")
     print("\n--- Source File Info ---")
     for f in get_source_file_info():

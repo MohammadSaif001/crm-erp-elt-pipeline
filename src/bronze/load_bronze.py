@@ -5,17 +5,12 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from typing import Any
+
 from src.bronze.hash import generate_file_hash
+from src.bronze.ingestion_checker import is_hash_processed, log_ingestion
+from src.core.database import get_engine
 from src.core.logger import setup_logger
 from src.core.paths import get_raw_data_path
-from src.bronze.hash import generate_file_hash
-from src.bronze.ingestion_checker import(
-        is_hash_processed,
-        log_ingestion)
-from src.core.database import get_engine
-
-
 
 logger = setup_logger("bronze")
 
@@ -88,7 +83,6 @@ def load_cust_info() -> bool:
 
         df = read_bronze_csv(str(csv_path))
         df = add_raw_row(df)
-
 
         #! Map Columns
         # .get()
@@ -180,7 +174,6 @@ def load_sales_details_info() -> bool:
 
         #! Add raw_row (wrapped)
         df = add_raw_row(df)
-
 
         #! Map Columns
         df["ingest_id"] = df.get("ingest_id")
@@ -277,13 +270,13 @@ def load_prd_info() -> bool:
         df = read_bronze_csv(str(csv_path))
         #! 2. Add raw_row
         df = add_raw_row(df)
-        df['prd_id']    = df.get('prd_id')
-        df['prd_key']   = df.get('prd_key')
-        df['prd_name']  = df.get('prd_nm')
-        df['prd_cost']  = df.get('prd_cost')
-        df['prd_line']  = df.get('prd_line')
-        df['prd_start_date_raw'] = df.get('prd_start_dt')
-        df['prd_end_date_raw'] = df.get('prd_end_dt')
+        df["prd_id"] = df.get("prd_id")
+        df["prd_key"] = df.get("prd_key")
+        df["prd_name"] = df.get("prd_nm")
+        df["prd_cost"] = df.get("prd_cost")
+        df["prd_line"] = df.get("prd_line")
+        df["prd_start_date_raw"] = df.get("prd_start_dt")
+        df["prd_end_date_raw"] = df.get("prd_end_dt")
 
         #! Select columns to write
         final_cols = [

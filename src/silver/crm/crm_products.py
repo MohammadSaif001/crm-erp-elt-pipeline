@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import Date, DateTime, Numeric, String
 
-from src.core.database import get_engine, load_to_silver
+from src.core.database import get_engine
 from src.core.logger import setup_logger
 
 logger = setup_logger(__name__.split(".")[-1])
@@ -219,9 +219,9 @@ def run_products_pipeline(table_name: str) -> None:
     df_products["loaded_at"] = pd.Timestamp.now()
 
     df_products.to_sql(
-        name = "crm_prd_info",
-        con  = get_engine("silver"),
-        if_exists = "replace",
+        name="crm_prd_info",
+        con=get_engine("silver"),
+        if_exists="replace",
         index=False,
         dtype={
             "prd_id": String(50),

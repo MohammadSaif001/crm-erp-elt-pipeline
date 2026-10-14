@@ -1,4 +1,6 @@
 import argparse
+import subprocess
+import sys
 
 from src.bronze.load_bronze import run_bronze_pipeline
 from src.core.database import get_engine
@@ -16,6 +18,28 @@ logger = setup_logger("pipeline")
 def run(args) -> None:
     logger.info("Pipeline start")
 
+    if args.run_dashboard:  # For running only the dashboard layer
+        import webbrowser
+
+        webbrowser.open("http://localhost:8000")
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "dashboard.app:app",
+                "--reload",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8000",
+            ],
+            check=True,
+        )
+
+        logger.info("Pipeline complete")
+        return
+
     engine = get_engine()
 
     #! Check if the engine is None before proceeding
@@ -29,6 +53,7 @@ def run(args) -> None:
     execute_sql_file(engine, "sql/silver/silver_layer_table.sql")
     #! Create tables for gold layers
     execute_sql_file(engine, "sql/bootstrap/ingestion_log.sql")
+
     if args.run_pipeline:  # For running the entire pipeline
         run_bronze_pipeline()
         run_silver_pipeline()
@@ -39,7 +64,6 @@ def run(args) -> None:
         run_silver_pipeline()
     elif args.run_gold:  # For running only the gold layer
         run_gold_pipeline()
-
     logger.info("Pipeline complete")
 
 
@@ -66,6 +90,12 @@ def main() -> None:
         "--run-gold",
         action="store_true",
         help="Run only the gold layer of the data pipeline.",
+    )
+
+    run_group.add_argument(
+        "--run-dashboard",
+        action="store_true",
+        help="Run only the dashboard layer of the data pipeline.",
     )
 
     args = parser.parse_args()

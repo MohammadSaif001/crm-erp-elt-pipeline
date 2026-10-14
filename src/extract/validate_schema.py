@@ -11,9 +11,8 @@ Usage:
 import pandas as pd
 
 from src.core.logger import setup_logger
-from src.extract.read_csv_files import read_source_file
-
 from src.core.paths import get_raw_data_path
+from src.extract.read_csv_files import read_source_file
 
 logger = setup_logger(__name__.split(".")[-1])
 

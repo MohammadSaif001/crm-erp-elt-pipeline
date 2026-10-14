@@ -186,9 +186,9 @@ def run_sales_pipeline(table_name: str) -> None:
     valid_df["loaded_at"] = pd.Timestamp.now()
 
     valid_df.to_sql(
-        name = "crm_sales_details",
-        con  = get_engine("silver"),
-        if_exists = "replace",
+        name="crm_sales_details",
+        con=get_engine("silver"),
+        if_exists="replace",
         index=False,
         dtype={
             "sales_ord_num": String(100),

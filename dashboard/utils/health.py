@@ -1,5 +1,3 @@
-"""Combine live database, pipeline, and data-quality state for the Home page."""
-
 from __future__ import annotations
 
 from config import DB_SETTINGS
@@ -42,7 +40,9 @@ def compute_overall_pipeline_status() -> dict:
     if run_failed or not all_dbs_ok or critical_failed or duplicate_query_failed:
         status = "FAILED"
         if not all_dbs_ok:
-            failed_db = "Gold" if not gold_ok else "Silver" if not silver_ok else "Bronze"
+            failed_db = (
+                "Gold" if not gold_ok else "Silver" if not silver_ok else "Bronze"
+            )
             explanation = (
                 f"Pipeline status is FAILED because the {failed_db} database is unavailable. "
                 "The latest Gold layer could not be verified."
@@ -77,13 +77,22 @@ def compute_overall_pipeline_status() -> dict:
         )
 
     row_counts = get_row_counts()
-    bronze_rows = int(row_counts.loc[row_counts["layer"] == "Bronze", "row_count"].sum()) if not row_counts.empty else 0
-    gold_rows = int(row_counts.loc[row_counts["layer"] == "Gold", "row_count"].sum()) if not row_counts.empty else 0
+    bronze_rows = (
+        int(row_counts.loc[row_counts["layer"] == "Bronze", "row_count"].sum())
+        if not row_counts.empty
+        else 0
+    )
+    gold_rows = (
+        int(row_counts.loc[row_counts["layer"] == "Gold", "row_count"].sum())
+        if not row_counts.empty
+        else 0
+    )
 
     return {
         "status": status,
         "explanation": explanation,
-        "last_run": run_info.get("end_time") or run_info.get("start_time", "Not available"),
+        "last_run": run_info.get("end_time")
+        or run_info.get("start_time", "Not available"),
         "duration": run_info.get("duration", "Not available"),
         "records_processed": bronze_rows,
         "records_loaded": gold_rows,

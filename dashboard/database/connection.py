@@ -1,15 +1,3 @@
-"""
-database/connection.py
-==============================================================================
-SQLAlchemy engine factory for the dashboard.
-
-Mirrors the pattern used by the pipeline's own `src/core/database.py`
-(engine-per-database), but adds Streamlit-aware caching so the dashboard
-does not open a fresh connection pool on every rerun, plus defensive error
-handling so a database outage degrades gracefully in the UI instead of
-crashing the app.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -66,7 +54,7 @@ def test_connection(database: str = DB_SETTINGS.gold_db) -> tuple[bool, str]:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return True, f"Connected to `{database}`"
-    
+
     except OperationalError as exc:
         logger.error("Database connection failed for %s: %s", database, exc)
         return False, f"Connection failed: {exc.orig if hasattr(exc, 'orig') else exc}"

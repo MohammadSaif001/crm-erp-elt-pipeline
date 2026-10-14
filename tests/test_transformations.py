@@ -59,7 +59,6 @@ from src.silver.crm.crm_sales import (
     normalize_data as sales_normalize,
 )
 from src.silver.erp.erp_customers import (
-    standardize_customer_id,
     apply_value_replacements,
     customer_replacemts,
     location_replacements,
