@@ -141,9 +141,9 @@ def run_customer_pipeline() -> None:
         #! Save to silver layer
         df_customer["loaded_at"] = pd.Timestamp.now()
         df_customer.to_sql(
-            name = "erp_cust_az12",
-            con  = get_engine("silver"),
-            if_exists = "replace",
+            name="erp_cust_az12",
+            con=get_engine("silver"),
+            if_exists="replace",
             index=False,
             dtype={
                 "cid": String(100),
@@ -210,9 +210,9 @@ def run_category_pipeline() -> None:
 
         df_category["loaded_at"] = pd.Timestamp.now()
         df_category.to_sql(
-            name   = "erp_px_cat_g1v2",
-            con  = get_engine("silver"),
-            if_exists = "replace",
+            name="erp_px_cat_g1v2",
+            con=get_engine("silver"),
+            if_exists="replace",
             index=False,
             dtype={
                 "id": String(100),

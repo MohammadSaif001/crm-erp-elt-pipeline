@@ -24,7 +24,7 @@ def format_number(value: float | None) -> str:
     try:
         val = int(value)
         return f"{val:,}"
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return str(value)
 
 

@@ -1,16 +1,3 @@
-"""
-database/queries.py
-==============================================================================
-All SQL queries used by the dashboard, centralized in one module so that:
-  1. Column-name assumptions (see config.GOLD_SCHEMA) only need to be
-     corrected in one place.
-  2. Every page function is a thin wrapper: build filters -> run_query ->
-     cached DataFrame.
-
-Query functions use a process-local TTL cache keyed by their arguments, so
-identical requests reuse results instead of re-hitting MySQL.
-"""
-
 from __future__ import annotations
 
 import csv
@@ -19,9 +6,8 @@ from pathlib import Path
 
 import pandas as pd
 from config import APP_SETTINGS, DB_SETTINGS, GOLD_SCHEMA
-from utils.cache import ttl_cache
-
 from database.connection import run_query, test_connection
+from utils.cache import ttl_cache
 
 TTL = APP_SETTINGS.cache_ttl_seconds
 

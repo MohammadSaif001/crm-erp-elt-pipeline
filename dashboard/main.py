@@ -229,7 +229,9 @@ def home_page(request: Request):
     if health_info["warnings_count"] > 0 or health_info["failed_checks"] > 0:
         duplicate_rows = dq.get("duplicate_checks")
         if not duplicate_rows.empty and "passed" in duplicate_rows.columns:
-            for _, result in duplicate_rows[duplicate_rows["passed"] == False].iterrows():
+            for _, result in duplicate_rows[
+                duplicate_rows["passed"] == False
+            ].iterrows():
                 check = escape(str(result.get("check", "duplicate check")))
                 if result.get("status") == "FAILED":
                     attention_items.append(f"{check}: query did not complete.")
@@ -254,7 +256,9 @@ def home_page(request: Request):
             "attention_items": attention_items,
         }
     )
-    return templates.TemplateResponse(request=request, name="home.html", context=context)
+    return templates.TemplateResponse(
+        request=request, name="home.html", context=context
+    )
 
 
 @app.get("/pipeline-run", response_class=HTMLResponse)
@@ -466,7 +470,9 @@ def refresh_report(redirect_to: str | None = "/home"):
     """Clear all caches, bump the timestamp, and redirect back to current page."""
     clear_all_caches()
     bump_last_refresh()
-    safe_redirect = redirect_to if redirect_to and redirect_to.startswith("/") else "/home"
+    safe_redirect = (
+        redirect_to if redirect_to and redirect_to.startswith("/") else "/home"
+    )
     return RedirectResponse(url=safe_redirect, status_code=303)
 
 

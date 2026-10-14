@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 def load_config():
-   
     config_path = get_config_path()
     rel_config_path = os.path.relpath(config_path, get_project_root())
     logging.info(f"Loading config from: {rel_config_path}")
@@ -42,7 +41,7 @@ def _create_database(cfg: dict, dbname: str) -> None:
             conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {dbname};"))
             conn.commit()
             logger.info(f"✓ Database '{dbname}' created/verified successfully")
-            
+
     except Exception as e:
         logger.error(f"Failed to create database '{dbname}': {e}")
         raise
@@ -55,7 +54,7 @@ def get_engine(layer="bronze"):
     - Automatically creates database if it doesn't exist on first connection.
     """
     full_config = load_config()
-    
+
     # Ensure 'mysql' key exists
     if "mysql" not in full_config:
         raise KeyError("'mysql' section missing in db_config.json")
@@ -72,22 +71,22 @@ def get_engine(layer="bronze"):
         "silver": cfg["silver_db"],
         "gold": cfg["gold_db"],
     }
-    
+
     if layer not in db_map:
         raise ValueError(f"Unknown layer: {layer}")
-        
+
     dbname = db_map[layer]
     pwd_quoted = quote_plus(pwd)
-    
+
     url = f"mysql+pymysql://{user}:{pwd_quoted}@{host}:{port}/{dbname}"
-    
+
     try:
         # Try to create engine and test connection
         engine = create_engine(url, pool_pre_ping=True)
         # Test the connection
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        
+
         logger.info(f"Connected to {layer} database: {dbname}")
         return engine
 
@@ -100,7 +99,7 @@ def get_engine(layer="bronze"):
         try:
             # Create the database
             _create_database(cfg, dbname)
-            
+
             # Create a new engine and test connection
             engine = create_engine(url, pool_pre_ping=True)
             with engine.connect() as conn:
@@ -110,7 +109,7 @@ def get_engine(layer="bronze"):
                 f"Successfully connected to newly created {layer} database: {dbname}"
             )
             return engine
-            
+
         except Exception as create_error:
             logger.error(
                 f"Failed to create and connect to database '{dbname}': {create_error}"

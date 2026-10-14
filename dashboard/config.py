@@ -1,26 +1,3 @@
-"""
-config.py
-==============================================================================
-Central configuration for the ELT Data Engineering Pipeline Dashboard.
-
-Reads MySQL connection details from environment variables (falls back to the
-same defaults used by the pipeline's `configs/db_config.json`) and exposes a
-single `Settings` object used throughout the app.
-
-SCHEMA ASSUMPTION NOTICE
---------------------------------------------------------------------------
-The upstream pipeline repository (rashid-dsai/elt-data-engineering-pipeline)
-documents the Gold layer as three views with a fixed column COUNT but does
-not publish the literal `CREATE VIEW` SQL in its README. Column names below
-are INFERRED from the repository's documented naming conventions (e.g.
-`cst_id`, `prd_key`, `sls_*` prefixes, FK integrity rules) and are marked
-with `# ASSUMED` wherever they are not verbatim from the README. If your
-actual view definitions differ, update `GOLD_SCHEMA` below — every query in
-`database/queries.py` is written against these names, in one place, so a
-schema change only requires editing this file.
---------------------------------------------------------------------------
-"""
-
 from __future__ import annotations
 
 import json
@@ -29,6 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+from src.core.paths import get_logs_path
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
@@ -84,12 +63,6 @@ class DatabaseSettings:
         )
 
 
-# --------------------------------------------------------------------------
-# GOLD LAYER SCHEMA MAP  (single source of truth for column names)
-# --------------------------------------------------------------------------
-# Columns confirmed directly by the README are marked "documented".
-# Columns not explicitly spelled out are marked "# ASSUMED — verify against
-# actual CREATE VIEW SQL" and follow the pipeline's own naming conventions.
 GOLD_SCHEMA = {
     "dim_customers": {
         "table": "dim_customers",
@@ -144,20 +117,8 @@ def _resolve_log_path() -> str:
     env_path = os.getenv("PIPELINE_LOG_PATH")
     if env_path and os.path.exists(env_path):
         return env_path
-    base_dir = Path(__file__).resolve().parent
-    candidates = [
-        base_dir.parent / "data" / "logs" / "pipeline.log",
-        base_dir / "data" / "logs" / "pipeline.log",
-        Path("data/logs/pipeline.log"),
-        Path("../data/logs/pipeline.log"),
-        Path(
-            "/home/mohammadsaif/Projects/data_engineering_project/data/logs/pipeline.log"
-        ),
-    ]
-    for c in candidates:
-        if c.exists():
-            return str(c)
-    return str(base_dir.parent / "data" / "logs" / "pipeline.log")
+    log_path = get_logs_path("pipeline.log")
+    return str(log_path)
 
 
 # --------------------------------------------------------------------------
@@ -171,7 +132,7 @@ class AppSettings:
     app_icon: str = "📋"
     layout: str = "wide"
     theme: str = "light"
-    cache_ttl_seconds: int = 300  # 5 minutes — balances freshness vs DB load
+    cache_ttl_seconds: int = 300
     logo_path: str = str(Path(__file__).resolve().parent / "assets" / "logo.png")
     styles_path: str = str(Path(__file__).resolve().parent / "assets" / "styles.css")
     log_file_path: str = field(default_factory=_resolve_log_path)
@@ -186,6 +147,7 @@ class AppSettings:
     bg_card: str = "#FFFFFF"
     text_primary: str = "#000000"
     text_secondary: str = "#333333"
+    text_disabled: str = "#999999"
     border_color: str = "#000000"
 
     pipeline_layers: tuple = field(default_factory=lambda: ("Bronze", "Silver", "Gold"))

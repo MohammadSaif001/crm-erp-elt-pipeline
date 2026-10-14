@@ -122,7 +122,9 @@ def client(monkeypatch):
     }
 
     monkeypatch.setattr(dashboard, "test_connection", lambda _database: (True, "ok"))
-    monkeypatch.setattr(dashboard, "compute_overall_pipeline_status", lambda: health_info)
+    monkeypatch.setattr(
+        dashboard, "compute_overall_pipeline_status", lambda: health_info
+    )
     monkeypatch.setattr(
         dashboard,
         "get_pipeline_lineage",
@@ -135,8 +137,18 @@ def client(monkeypatch):
         dashboard,
         "parse_pipeline_log",
         lambda max_lines=None: [
-            {"timestamp": "10:00", "level": "INFO", "module": "pipeline", "message": "startup"},
-            {"timestamp": "10:01", "level": "ERROR", "module": "pipeline", "message": "sample error"},
+            {
+                "timestamp": "10:00",
+                "level": "INFO",
+                "module": "pipeline",
+                "message": "startup",
+            },
+            {
+                "timestamp": "10:01",
+                "level": "ERROR",
+                "module": "pipeline",
+                "message": "sample error",
+            },
         ],
     )
 
