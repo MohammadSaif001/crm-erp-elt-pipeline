@@ -15,7 +15,7 @@ def extract_from_bronze(table_name: str) -> pd.DataFrame:
         raise RuntimeError(f"Failed to extract from bronze table {table_name}") from e
 
 
-#! Define schema for data types
+# Define schema for data types
 schema_customer = {
     "cst_id": "string",
     "cst_key": "string",
@@ -27,7 +27,7 @@ schema_customer = {
 }
 
 
-#! combined normalization function for all string columns in the dataframe
+# combined normalization function for all string columns in the dataframe
 def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     # Normalize string columns
@@ -55,7 +55,7 @@ def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-#! high level schema enforcement function
+# high level schema enforcement function
 def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     """# Enforce schema
         - Enforce data types based on provided schema, with error handling
@@ -70,7 +70,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     """
     for column, dtype in schema.items():
         if column not in df.columns:
-            #! log warning and skip missing columns
+            # log warning and skip missing columns
             logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
@@ -119,7 +119,7 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
 
     if df.empty:
         return df
-    #! Gender Standardization
+    # Gender Standardization
     gender_mapping = {
         "m": "Male",
         "f": "Female",
@@ -153,7 +153,7 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-#! clean function for deleting duplicate records
+# clean function for deleting duplicate records
 def deduplicate_latest_by_date(
     df: pd.DataFrame, primary_key: str, date_col: str
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -173,17 +173,17 @@ def deduplicate_latest_by_date(
     # Keep latest per primary key
     kept_rows = df_sorted.drop_duplicates(subset=primary_key, keep="first")
 
-    #! Identify deleted rows based on index difference
+    # Identify deleted rows based on index difference
     deleted_rows = df_sorted[~df_sorted.index.isin(kept_rows.index)]
 
-    #! logging into log file for debugging and monitoring how many duplicates were found and removed
+    # logging into log file for debugging and monitoring how many duplicates were found and removed
     logger.info(f"[DEDUP] Total rows   : {len(df)}")
     logger.info(f"[DEDUP] Kept rows    : {len(kept_rows)}")
     logger.info(f"[DEDUP] Deleted rows : {len(deleted_rows)}")
     return kept_rows, deleted_rows
 
 
-#! delete null values in the dataframe and log how many rows were deleted form PRIMARY_KEY column
+# delete null values in the dataframe and log how many rows were deleted form PRIMARY_KEY column
 def remove_null_primary_keys(df: pd.DataFrame, primary_key: str) -> pd.DataFrame:
     initial_count = len(df)
 
@@ -214,7 +214,7 @@ def run_customers_pipeline(table_name: str) -> None:
     data_quality_checks(
         df_customers
     )  # log any duplicates found into log file (but do not remove yet)
-    df_customers, df_duplicates = deduplicate_latest_by_date(
+    df_customers, _df_duplicates = deduplicate_latest_by_date(
         df_customers, primary_key="cst_id", date_col="cst_create_date_raw"
     )  # remove duplicates based on cst_id, keep latest loaded_at record
 

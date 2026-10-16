@@ -78,8 +78,8 @@ def check_duplicates(layer: str = "silver") -> dict:
                     )
                 else:
                     logger.info(f"[DUPLICATES] {layer}.{table} — PASS (no duplicates)")
-        except Exception as e:
-            logger.error(f"[DUPLICATES] Error checking {layer}.{table}: {e}")
+        except Exception as e:  # noqa: BLE001 - report and continue per table
+            logger.error("[DUPLICATES] Error checking %s.%s: %s", layer, table, e)
             results[table] = {"status": "ERROR", "error": str(e)}
 
     return results

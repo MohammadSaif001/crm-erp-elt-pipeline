@@ -66,8 +66,8 @@ def check_nulls(layer: str = "silver") -> dict:
                         logger.warning(
                             f"[NULLS] {layer}.{table}.{col} has {null_count} NULL values"
                         )
-        except Exception as e:
-            logger.error(f"[NULLS] Error checking {layer}.{table}: {e}")
+        except Exception as e:  # noqa: BLE001 - report and continue per table
+            logger.error("[NULLS] Error checking %s.%s: %s", layer, table, e)
             table_results.append({"column": "*", "status": "ERROR", "error": str(e)})
 
         results[table] = table_results

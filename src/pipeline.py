@@ -42,16 +42,16 @@ def run(args) -> None:
 
     engine = get_engine()
 
-    #! Check if the engine is None before proceeding
+    # Check if the engine is None before proceeding
     if engine is None:
         logger.error("Pipeline aborted due to database connection failure.")
         return
 
-    #! Create tables for bronze layers
+    # Create tables for bronze layers
     execute_sql_file(engine, "sql/bronze/create_bronze_table.sql")
-    #! Create tables for silver layers
+    # Create tables for silver layers
     execute_sql_file(engine, "sql/silver/silver_layer_table.sql")
-    #! Create tables for gold layers
+    # Create tables for gold layers
     execute_sql_file(engine, "sql/bootstrap/ingestion_log.sql")
 
     if args.run_pipeline:  # For running the entire pipeline

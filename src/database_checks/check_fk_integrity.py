@@ -115,8 +115,8 @@ def check_fk_integrity() -> list[dict]:
                     )
                 else:
                     logger.info(f"[FK] {rule['name']} — PASS")
-        except Exception as e:
-            logger.error(f"[FK] Error on rule '{rule['name']}': {e}")
+        except Exception as e:  # noqa: BLE001 - report and continue per rule
+            logger.error("[FK] Error on rule '%s': %s", rule["name"], e)
             results.append(
                 {
                     "rule": rule["name"],

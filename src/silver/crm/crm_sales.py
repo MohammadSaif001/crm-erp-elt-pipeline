@@ -15,7 +15,7 @@ def extract_from_bronze(table_name: str) -> pd.DataFrame:
         raise RuntimeError(f"Failed to extract from bronze table {table_name}") from e
 
 
-#! Define expected schema for sales data
+# Define expected schema for sales data
 schema_sales = {
     "sales_ord_num": "string",
     "sales_prd_key": "string",
@@ -29,7 +29,7 @@ schema_sales = {
 }
 
 
-#!Schema enforcement function to ensure data types are correct and handle errors gracefully.
+# Schema enforcement function to ensure data types are correct and handle errors gracefully.
 def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     """
     Applies datatype schema to a pandas DataFrame.
@@ -43,7 +43,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     """
     for column, dtype in schema.items():
         if column not in df.columns:
-            #! log warning and skip missing columns
+            # log warning and skip missing columns
             logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
@@ -63,7 +63,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     return df
 
 
-#! data normalization function to handle nulls and whitespace in string columns
+# data normalization function to handle nulls and whitespace in string columns
 def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Cleans and standardizes raw input data.
@@ -91,7 +91,7 @@ def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-#! datetime conversion function to convert date columns and log any conversion issues
+# datetime conversion function to convert date columns and log any conversion issues
 def datetime_conversion(df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts raw date columns to proper datetime format and logs conversion issues.
@@ -107,7 +107,7 @@ def datetime_conversion(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-#! data validation function
+# data validation function
 def validate_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Validates data against business rules and logs any issues found.
     Example rules:
@@ -131,7 +131,7 @@ def validate_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return valid_df, invalid_df
 
 
-#!treating some colums [e.g sales_sales, sales_quality,sales_price]
+# treating some colums [e.g sales_sales, sales_quality,sales_price]
 def clean_sales_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Cleans and standardizes sales-related numeric fields.

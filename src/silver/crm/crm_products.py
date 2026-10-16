@@ -56,7 +56,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     """
     for column, dtype in schema.items():
         if column not in df.columns:
-            #! log warning and skip missing columns
+            # log warning and skip missing columns
             logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
@@ -119,7 +119,7 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     if df.empty:
         return df
-    #! Product Line Standardization
+    # Product Line Standardization
     product_line_mapping = {
         "R": "Road",
         "M": "Mountain",
@@ -136,7 +136,7 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
     df["prd_line"] = df["prd_line"].fillna("n/a")
     df["prd_cost"] = df["prd_cost"].fillna(0)
     # df["prd_end_date_raw"] = df["prd_start_date_raw"].shift(-1) + pd.Timedelta(weeks=26)
-    #! window function [LEAD]
+    # window function [LEAD]
     df = df.sort_values(by=["prd_key", "prd_start_date_raw"])
     df["prd_end_date_raw"] = df.groupby("prd_key")["prd_start_date_raw"].shift(
         -1
