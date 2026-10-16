@@ -15,7 +15,7 @@ from src.core.paths import get_raw_data_path
 logger = setup_logger("bronze")
 
 
-#! Bronze CSV Reader Function
+# Bronze CSV Reader Function
 def read_bronze_csv(csv_path: str) -> pd.DataFrame:
     """
     Bronze CSV reader:
@@ -43,18 +43,18 @@ def add_raw_row(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-#! Database Connection Function
+# Database Connection Function
 def data_base_connection() -> None | Any:
     try:
         engine = get_engine("bronze")
         logger.info("Database connected successfully for bronze layer.")
         return engine  # Return it!
-    except Exception as e:
-        logger.exception("Connection error while creating bronze DB engine: %s", e)
+    except Exception:
+        logger.exception("Connection error while creating bronze DB engine")
         return None
 
 
-#! 1.Customer Load Function
+# 1.Customer Load Function
 def load_cust_info() -> bool:
 
     start_time = time.time()
@@ -70,9 +70,9 @@ def load_cust_info() -> bool:
         logger.warning("Exiting due to database connection failure.")
         return False
     try:
-        #! Read CSV (wrapped)
+        # Read CSV (wrapped)
         csv_path = get_raw_data_path(os.path.join("source_crm", "cust_info.csv"))
-        #! Generate file hash for idempotency check
+        # Generate file hash for idempotency check
         file_hash = generate_file_hash(str(csv_path))
 
         if is_hash_processed(engine, file_hash):
@@ -84,7 +84,7 @@ def load_cust_info() -> bool:
         df = read_bronze_csv(str(csv_path))
         df = add_raw_row(df)
 
-        #! Map Columns
+        # Map Columns
         # .get()
         df["cst_id"] = df.get("cst_id")
         df["cst_key"] = df.get("cst_key")
@@ -138,12 +138,12 @@ def load_cust_info() -> bool:
 
         return True
 
-    except Exception as e:
-        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
+    except Exception:
+        logger.exception("[ERROR] Loading table: %s", table_name)
         return False
 
 
-#! Sales Load Function
+# Sales Load Function
 def load_sales_details_info() -> bool:
 
     start_time = time.time()
@@ -153,7 +153,7 @@ def load_sales_details_info() -> bool:
 
     logger.info(f"[START] Loading table: {table_name}")
 
-    #! Connect to Database
+    # Connect to Database
     engine = data_base_connection()
     if engine is None:
         logger.warning("Exiting due to database connection failure.")
@@ -161,7 +161,7 @@ def load_sales_details_info() -> bool:
 
     try:
         csv_path = get_raw_data_path(os.path.join("source_crm", "sales_details.csv"))
-        #! Check if file already processed using hash
+        # Check if file already processed using hash
         file_hash = generate_file_hash(str(csv_path))
         if is_hash_processed(engine, file_hash):
             logger.info(
@@ -169,13 +169,13 @@ def load_sales_details_info() -> bool:
             )
             return False
 
-        #! Read CSV (wrapped)
+        # Read CSV (wrapped)
         df = read_bronze_csv(str(csv_path))
 
-        #! Add raw_row (wrapped)
+        # Add raw_row (wrapped)
         df = add_raw_row(df)
 
-        #! Map Columns
+        # Map Columns
         df["ingest_id"] = df.get("ingest_id")
         df["sales_prd_key"] = df.get("sls_prd_key")
         df["sales_ord_num"] = df.get("sls_ord_num")
@@ -214,7 +214,7 @@ def load_sales_details_info() -> bool:
             if_exists="append",
             index=False,
         )
-        #! Log ingestion in ingestion_log table
+        # Log ingestion in ingestion_log table
         log_ingestion(
             engine,
             source_name=source,
@@ -235,12 +235,12 @@ def load_sales_details_info() -> bool:
 
         return True
 
-    except Exception as e:
-        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
+    except Exception:
+        logger.exception("[ERROR] Loading table: %s", table_name)
         return False
 
 
-#!Product Load Function
+# Product Load Function
 def load_prd_info() -> bool:
 
     start_time = time.time()
@@ -250,16 +250,16 @@ def load_prd_info() -> bool:
 
     logger.info(f"[START] Loading table: {table_name}")
 
-    #! Connect to Database
+    # Connect to Database
     engine = data_base_connection()
     if engine is None:
         logger.warning("Exiting due to database connection failure.")
         return False
 
     try:
-        #! 1. Read CSV
+        # 1. Read CSV
         csv_path = get_raw_data_path(os.path.join("source_crm", "prd_info.csv"))
-        #! Check if file already processed using hash
+        # Check if file already processed using hash
         file_hash = generate_file_hash(str(csv_path))
         if is_hash_processed(engine, file_hash):
             logger.info(
@@ -268,7 +268,7 @@ def load_prd_info() -> bool:
             return False
 
         df = read_bronze_csv(str(csv_path))
-        #! 2. Add raw_row
+        # 2. Add raw_row
         df = add_raw_row(df)
         df["prd_id"] = df.get("prd_id")
         df["prd_key"] = df.get("prd_key")
@@ -278,7 +278,7 @@ def load_prd_info() -> bool:
         df["prd_start_date_raw"] = df.get("prd_start_dt")
         df["prd_end_date_raw"] = df.get("prd_end_dt")
 
-        #! Select columns to write
+        # Select columns to write
         final_cols = [
             "raw_row",
             "prd_id",
@@ -290,11 +290,11 @@ def load_prd_info() -> bool:
             "prd_end_date_raw",
         ]
 
-        #! Filter dataframe to only include columns that actually exist now
+        # Filter dataframe to only include columns that actually exist now
         cols_to_write = [c for c in final_cols if c in df.columns]
         df_final = df[cols_to_write]
 
-        #! console log
+        # console log
         logger.info(f"Writing {len(df_final)} rows to table 'crm_prd_info'...")
         df_final.to_sql(
             name="crm_prd_info",
@@ -303,7 +303,7 @@ def load_prd_info() -> bool:
             index=False,
         )
 
-        #! Log ingestion in ingestion_log table
+        # Log ingestion in ingestion_log table
         log_ingestion(
             engine,
             source_name=source,
@@ -323,12 +323,12 @@ def load_prd_info() -> bool:
 
         return True
 
-    except Exception as e:
-        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
+    except Exception:
+        logger.exception("[ERROR] Loading table: %s", table_name)
         return False
 
 
-#! ERP Load Functions
+# ERP Load Functions
 def load_erp_cust_az12() -> bool:
 
     start_time = time.time()
@@ -337,15 +337,15 @@ def load_erp_cust_az12() -> bool:
     table_name = "erp_cust_az12"
     logger.info(f"[START] Loading table: {table_name}")
 
-    #! Connect to Database
+    # Connect to Database
     engine = data_base_connection()
     if engine is None:
         logger.warning("[WARNING] Exiting due to database connection failure.")
         return False
     try:
-        #! Read CSV (wrapped)
+        # Read CSV (wrapped)
         csv_path = get_raw_data_path(os.path.join("source_erp", "CUST_AZ12.csv"))
-        #! Generate file hash for idempotency check
+        # Generate file hash for idempotency check
         file_hash = generate_file_hash(str(csv_path))
 
         if is_hash_processed(engine, file_hash):
@@ -356,10 +356,10 @@ def load_erp_cust_az12() -> bool:
 
         df = read_bronze_csv(str(csv_path))
 
-        #! Add raw_row (wrapped)
+        # Add raw_row (wrapped)
         df = add_raw_row(df)
 
-        #! Colunmn Mapping
+        # Colunmn Mapping
         df["ingest_id"] = df.get("ingest_id")
         df["cid"] = df.get("cid")
         df["birth_date_raw"] = df.get("bdate")
@@ -380,7 +380,7 @@ def load_erp_cust_az12() -> bool:
         cols_to_write = [c for c in final_cols if c in df.columns]
         df_final = df[cols_to_write]
 
-        #! console log
+        # console log
         logger.info(f"Writing {len(df_final)} rows to table 'erp_cust_az12'...")
         df_final.to_sql(
             name="erp_cust_az12",
@@ -407,8 +407,8 @@ def load_erp_cust_az12() -> bool:
         logger.info(f"Success: Data loaded into bronze_db.{table_name}")
 
         return True
-    except Exception as e:
-        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
+    except Exception:
+        logger.exception("[ERROR] Loading table: %s", table_name)
         return False
 
 
@@ -421,15 +421,15 @@ def load_erp_location_a101() -> bool:
 
     logger.info("Starting Bronze Load: ERP Location.")
 
-    #! Connect to Database
+    # Connect to Database
     engine = data_base_connection()
     if engine is None:
         logger.warning("Exiting due to database connection failure.")
         return False
     try:
-        #! Read CSV (wrapped)
+        # Read CSV (wrapped)
         csv_path = get_raw_data_path(os.path.join("source_erp", "LOC_A101.csv"))
-        #! Generate file hash for idempotency check
+        # Generate file hash for idempotency check
         file_hash = generate_file_hash(str(csv_path))
 
         if is_hash_processed(engine, file_hash):
@@ -440,10 +440,10 @@ def load_erp_location_a101() -> bool:
 
         df = read_bronze_csv(str(csv_path))
 
-        #! Add raw_row (wrapped)
+        # Add raw_row (wrapped)
         df = add_raw_row(df)
 
-        #! 3.Colunmn Mapping
+        # 3.Colunmn Mapping
         df["cid"] = df.get("cid")
         df["country_name"] = df.get("cntry")
         df["loaded_at"] = pd.Timestamp.now()
@@ -480,8 +480,8 @@ def load_erp_location_a101() -> bool:
         logger.info(f"Success: Data loaded into bronze_db.{table_name}")
 
         return True
-    except Exception as e:
-        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
+    except Exception:
+        logger.exception("[ERROR] Loading table: %s", table_name)
         return False
 
 
@@ -489,20 +489,19 @@ def load_erp_px_cat_g1v2() -> bool:
     start_time = time.time()
     source = "source_erp"
     file_name = "PX_CAT_G1V2.csv"
-    bronze_table = "erp_px_cat_g1v2"
     table_name = "erp_px_cat_g1v2"
     logger.info(f"[START] Loading table: {table_name}")
     logger.info("Starting Bronze Load: ERP Category.")
 
-    #! Connect to Database
+    # Connect to Database
     engine = data_base_connection()
     if engine is None:
         logger.warning("Exiting due to database connection failure.")
         return False
     try:
-        #! Read CSV (wrapped)
+        # Read CSV (wrapped)
         csv_path = get_raw_data_path(os.path.join("source_erp", "PX_CAT_G1V2.csv"))
-        #! Generate file hash for idempotency check
+        # Generate file hash for idempotency check
         file_hash = generate_file_hash(str(csv_path))
 
         if is_hash_processed(engine, file_hash):
@@ -513,10 +512,10 @@ def load_erp_px_cat_g1v2() -> bool:
 
         df = read_bronze_csv(str(csv_path))
 
-        #! Add raw_row (wrapped)
+        # Add raw_row (wrapped)
         df = add_raw_row(df)
 
-        #! 3.Colunmn Mapping
+        # 3.Colunmn Mapping
         df["ingest_id"] = df.get("ingest_id")
         df["id"] = df.get("id")
         df["cat"] = df.get("cat")
@@ -564,12 +563,12 @@ def load_erp_px_cat_g1v2() -> bool:
         logger.info(f"Success: Data loaded into bronze_db.{table_name}")
 
         return True
-    except Exception as e:
-        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
+    except Exception:
+        logger.exception("[ERROR] Loading table: %s", table_name)
         return False
 
 
-#! Orchestration Function
+# Orchestration Function
 def run_bronze_pipeline() -> None:
     """
     Orchestrates complete Bronze layer ingestion.

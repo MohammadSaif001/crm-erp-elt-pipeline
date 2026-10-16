@@ -24,7 +24,7 @@ def format_number(value: float | None) -> str:
     try:
         val = int(value)
         return f"{val:,}"
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return str(value)
 
 
@@ -202,8 +202,8 @@ def get_latest_run_details() -> dict:
             t2 = datetime.fromisoformat(end_ts_raw.split(",")[0].strip())
             delta_sec = (t2 - t1).total_seconds()
             duration_str = format_duration(delta_sec)
-    except Exception:
-        pass
+    except (TypeError, ValueError):
+        logger.debug("Unable to calculate pipeline duration", exc_info=True)
 
     errors = [r for r in run_block if r.get("level", "").upper() == "ERROR"]
     warnings = [r for r in run_block if r.get("level", "").upper() == "WARNING"]

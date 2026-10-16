@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def load_config():
     config_path = get_config_path()
     rel_config_path = os.path.relpath(config_path, get_project_root())
-    logging.info(f"Loading config from: {rel_config_path}")
+    logger.info("Loading config from: %s", rel_config_path)
 
     with open(config_path, "r") as file:
         return json.load(file)

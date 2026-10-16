@@ -66,8 +66,8 @@ def read_all_sources() -> dict[str, pd.DataFrame]:
             df = read_source_file(source, file_name)
             dataframes[name] = df
             succeeded += 1
-        except Exception as e:
-            logger.error(f"[EXTRACT] Failed to read {source}/{file_name}: {e}")
+        except Exception as e:  # noqa: BLE001 - report and continue per source
+            logger.error("[EXTRACT] Failed to read %s/%s: %s", source, file_name, e)
             failed += 1
 
     logger.info(
@@ -95,8 +95,9 @@ def get_source_file_info() -> list[dict]:
         rows = None
         if exists:
             try:
-                rows = sum(1 for _ in open(csv_path)) - 1  # minus header
-            except Exception:
+                with open(csv_path, encoding="utf-8") as csv_file:
+                    rows = sum(1 for _ in csv_file) - 1  # minus header
+            except (OSError, UnicodeError):
                 rows = -1
 
         info.append(

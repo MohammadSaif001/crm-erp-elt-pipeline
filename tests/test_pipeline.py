@@ -19,7 +19,7 @@ from src.core.paths import get_project_root
 
 pytestmark = pytest.mark.integration
 
-#! Fixtures
+# Fixtures
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +37,7 @@ def gold_engine():
     return get_engine("gold")
 
 
-#! 1) Database connectivity tests
+# 1) Database connectivity tests
 
 
 class TestDatabaseConnectivity:
@@ -51,7 +51,7 @@ class TestDatabaseConnectivity:
             assert result.scalar() == 1, f"Cannot connect to {layer} database"
 
 
-#! 2) Bronze layer tests
+# 2) Bronze layer tests
 
 BRONZE_TABLES = [
     "crm_customers_info",
@@ -86,7 +86,7 @@ class TestBronzeLayer:
             assert "raw_row" in cols, f"'{table}' missing 'raw_row' column"
 
 
-#! 3) Silver layer tests
+# 3) Silver layer tests
 
 SILVER_TABLES = [
     "crm_customers_info",
@@ -131,12 +131,12 @@ class TestSilverLayer:
             with bronze_engine.connect() as bc, silver_engine.connect() as sc:
                 b_count = bc.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
                 s_count = sc.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
-                assert s_count <= b_count, (
-                    f"Silver {table} ({s_count}) has MORE rows than Bronze ({b_count})"
-                )
+                assert (
+                    s_count <= b_count
+                ), f"Silver {table} ({s_count}) has MORE rows than Bronze ({b_count})"
 
 
-#! 4) Gold layer tests
+# 4) Gold layer tests
 
 GOLD_VIEWS = ["dim_customers", "dim_products", "fact_sales"]
 
@@ -182,7 +182,7 @@ class TestGoldLayer:
                 print(f"WARNING: {null_prod} ({pct}%) rows have NULL product_key")
 
 
-#! 5) End-to-end data flow test
+# 5) End-to-end data flow test
 
 
 class TestEndToEnd:

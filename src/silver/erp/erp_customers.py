@@ -27,11 +27,11 @@ schema_location = {
 }
 
 
-#! high level schema enforcement function
+# high level schema enforcement function
 def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     for column, dtype in schema.items():
         if column not in df.columns:
-            #! log warning and skip missing columns
+            # log warning and skip missing columns
             logger.warning(f"[SCHEMA WARNING] Column missing: {column}")
             continue
         if dtype in ("Int64", "int64", "float64"):
@@ -51,7 +51,7 @@ def enforce_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     return df
 
 
-#! Customer ID Standardization
+# Customer ID Standardization
 def standardize_customer_id(df: pd.DataFrame) -> pd.DataFrame:
 
     if "cid" not in df.columns:
@@ -104,7 +104,7 @@ def apply_value_replacements(df: pd.DataFrame, replacements: dict) -> pd.DataFra
     return df
 
 
-#! Drop technical columns that are not needed in the silver layer
+# Drop technical columns that are not needed in the silver layer
 def drop_technical_columns(df: pd.DataFrame, drop_columns="raw_row") -> pd.DataFrame:
     df = df.drop(columns=drop_columns, errors="ignore")
     return df
@@ -138,7 +138,7 @@ def run_customer_pipeline() -> None:
         df_customer = df_customer.drop(columns=["ingest_id"], errors="ignore")
         logger.info("Technical columns dropped.")
 
-        #! Save to silver layer
+        # Save to silver layer
         df_customer["loaded_at"] = pd.Timestamp.now()
         df_customer.to_sql(
             name="erp_cust_az12",
@@ -154,8 +154,8 @@ def run_customer_pipeline() -> None:
             chunksize=1000,
         )
         logger.info("ERP Customers Silver Pipeline completed successfully.")
-    except Exception as e:
-        logger.error(f"Pipeline failed: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Pipeline failed")
 
 
 def run_location_pipeline() -> None:
@@ -179,7 +179,7 @@ def run_location_pipeline() -> None:
         df_location = transform_erp_cid_column(df_location)
         logger.info("CID transformation completed for location data.")
 
-        #! Save to silver layer
+        # Save to silver layer
         df_location["loaded_at"] = pd.Timestamp.now()
         df_location.to_sql(
             name="erp_location_a101",
@@ -194,8 +194,8 @@ def run_location_pipeline() -> None:
             chunksize=1000,
         )
         logger.info("ERP Customer Locations Silver Pipeline completed successfully.")
-    except Exception as e:
-        logger.error(f"Location pipeline failed: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Location pipeline failed")
 
 
 def run_category_pipeline() -> None:
@@ -224,8 +224,8 @@ def run_category_pipeline() -> None:
             chunksize=1000,
         )
         logger.info("ERP Product Categories Silver Pipeline completed successfully.")
-    except Exception as e:
-        logger.error(f"Category pipeline failed: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Category pipeline failed")
 
 
 if __name__ == "__main__":

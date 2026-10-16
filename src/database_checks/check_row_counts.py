@@ -47,8 +47,8 @@ def get_row_counts(layer: str) -> dict:
                 query = text(f"SELECT COUNT(*) AS cnt FROM {table}")
                 result = pd.read_sql(query, conn)
                 counts[table] = int(result["cnt"].iloc[0])
-        except Exception as e:
-            logger.error(f"[ROW_COUNT] Error reading {layer}.{table}: {e}")
+        except Exception as e:  # noqa: BLE001 - report and continue per table
+            logger.error("[ROW_COUNT] Error reading %s.%s: %s", layer, table, e)
             counts[table] = -1  # signals error
 
     return counts
