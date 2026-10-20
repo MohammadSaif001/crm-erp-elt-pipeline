@@ -4,10 +4,11 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
+
 def is_hash_processed(engine, file_hash):
 
-    query = text(""" 
-                    SELECT COUNT(*) 
+    query = text("""
+                    SELECT COUNT(*)
         FROM ingestion_log
         WHERE file_hash = :file_hash
     """)

@@ -131,9 +131,9 @@ class TestSilverLayer:
             with bronze_engine.connect() as bc, silver_engine.connect() as sc:
                 b_count = bc.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
                 s_count = sc.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
-                assert (
-                    s_count <= b_count
-                ), f"Silver {table} ({s_count}) has MORE rows than Bronze ({b_count})"
+                assert s_count <= b_count, (
+                    f"Silver {table} ({s_count}) has MORE rows than Bronze ({b_count})"
+                )
 
 
 # 4) Gold layer tests

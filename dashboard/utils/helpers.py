@@ -164,9 +164,6 @@ def get_latest_run_details() -> dict:
             "errors_count": 0,
         }
 
-    # Find the complete block for the last pipeline run.  Transformation
-    # functions and pytest can append diagnostic lines after a run; those
-    # lines must not be reported as part of that run's health summary.
     start_indices = [
         i for i, r in enumerate(records) if "Pipeline start" in r.get("message", "")
     ]

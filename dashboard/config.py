@@ -1,55 +1,44 @@
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-from src.core.paths import get_logs_path
+from src.core.paths import get_config_path, get_logs_path
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+ENV_FILE = get_config_path()
 
-
-def _load_local_database_config() -> dict[str, object]:
-    """Load the untracked pipeline DB config for local dashboard development."""
-    config_path = Path(__file__).resolve().parent.parent / "configs" / "db_config.json"
-    if not config_path.exists():
-        return {}
-    try:
-        with config_path.open("r", encoding="utf-8") as config_file:
-            return json.load(config_file).get("mysql", {})
-    except (OSError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"Unable to read database config at {config_path}") from exc
+load_dotenv(ENV_FILE)
 
 
-_LOCAL_DB_CONFIG = _load_local_database_config()
 
+def _database_setting(environment_name: str, default: str | None = None) -> str:
+    """Read a database setting from environment variables."""
+    value = os.getenv(environment_name)
+    if value is not None and value.strip():
+        return value
 
-def _database_setting(
-    environment_name: str, config_name: str, default: str | None = None
-) -> str:
-    value = os.getenv(environment_name) or _LOCAL_DB_CONFIG.get(config_name) or default
-    if value is None:
-        raise RuntimeError(
-            f"{environment_name} environment variable is not set and "
-            "configs/db_config.json does not provide a value"
-        )
-    return str(value)
+    if default is not None:
+        return default
+
+    raise RuntimeError(f"Required environment variable {environment_name} is not set.")
 
 
 @dataclass(frozen=True)
 class DatabaseSettings:
     """MySQL connection settings for the Gold layer database."""
 
-    host: str = _database_setting("DB_HOST", "host", "localhost")
-    port: int = int(_database_setting("DB_PORT", "port", "3306"))
-    user: str = _database_setting("DB_USER", "user", "root")
-    password: str = _database_setting("DB_PASSWORD", "password")
-    gold_db: str = _database_setting("GOLD_DB", "gold_db", "gold_db")
-    silver_db: str = _database_setting("SILVER_DB", "silver_db", "silver_db")
-    bronze_db: str = _database_setting("BRONZE_DB", "bronze_db", "bronze_db")
+    host: str = _database_setting("DB_HOST", "localhost")
+    port: int = int(_database_setting("DB_PORT", "3306"))
+    user: str = _database_setting("DB_USER")
+    password: str = _database_setting("DB_PASSWORD")
+
+    gold_db: str = _database_setting("GOLD_DB", "gold_db")
+    silver_db: str = _database_setting("SILVER_DB", "silver_db")
+    bronze_db: str = _database_setting("BRONZE_DB", "bronze_db")
+
     connect_timeout: int = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
     pool_size: int = int(os.getenv("DB_POOL_SIZE", "5"))
     pool_recycle: int = int(os.getenv("DB_POOL_RECYCLE", "3600"))
@@ -121,9 +110,9 @@ def _resolve_log_path() -> str:
     return str(log_path)
 
 
-# --------------------------------------------------------------------------
+# ---------------------
 # APPLICATION SETTINGS
-# --------------------------------------------------------------------------
+# ---------------------
 @dataclass(frozen=True)
 class AppSettings:
     """Global UI / behavior settings for the Streamlit app."""

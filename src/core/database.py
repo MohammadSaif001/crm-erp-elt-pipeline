@@ -1,70 +1,43 @@
-import json
 import logging
 import os
-from urllib.parse import quote_plus
+import re
 
 import pandas as pd
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError
+from dotenv import load_dotenv
+from sqlalchemy import URL, Engine, create_engine, text
+from sqlalchemy.exc import IntegrityError
 
-from src.core.paths import get_config_path, get_project_root
+from src.core.paths import get_config_path
+
+ENV_FILE = get_config_path()
+
+load_dotenv(ENV_FILE)
 
 logger = logging.getLogger(__name__)
 
 
 def load_config():
-    config_path = get_config_path()
-    rel_config_path = os.path.relpath(config_path, get_project_root())
-    logger.info("Loading config from: %s", rel_config_path)
+    def required(name: str):
+        value = os.getenv(name)
+        if value is None or not value.strip():
+            raise ValueError(f"Required environment variable {name} is not set.")
+        return value
 
-    with open(config_path, "r") as file:
-        return json.load(file)
-
-
-def _create_database(cfg: dict, dbname: str) -> None:
-    """
-    Create a database if it doesn't exist.
-    Uses admin connection (no database specified).
-    """
-    try:
-        user = cfg["user"]
-        pwd = cfg["password"]
-        host = cfg["host"]
-        port = cfg.get("port", 3306)
-
-        pwd_quoted = quote_plus(pwd)
-        # Admin connection without specifying a database
-        admin_url = f"mysql+pymysql://{user}:{pwd_quoted}@{host}:{port}/"
-        admin_engine = create_engine(admin_url, pool_pre_ping=True)
-        
-        with admin_engine.connect() as conn:
-            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {dbname};"))
-            conn.commit()
-            logger.info(f"✓ Database '{dbname}' created/verified successfully")
-
-    except Exception as e:
-        logger.error(f"Failed to create database '{dbname}': {e}")
-        raise
+    mysql_config = {
+        "user": required("DB_USER"),
+        "password": required("DB_PASSWORD"),
+        "host": required("DB_HOST"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "bronze_db": os.getenv("BRONZE_DB", "bronze_db"),
+        "silver_db": os.getenv("SILVER_DB", "silver_db"),
+        "gold_db": os.getenv("GOLD_DB", "gold_db"),
+    }
+    return {"mysql": mysql_config}
 
 
-def get_engine(layer="bronze"):
-    """
-    # Get SQLAlchemy engine for the specified layer (bronze, silver, gold).
-    - Get SQLAlchemy engine for specified layer.
-    - Automatically creates database if it doesn't exist on first connection.
-    """
-    full_config = load_config()
-
-    # Ensure 'mysql' key exists
-    if "mysql" not in full_config:
-        raise KeyError("'mysql' section missing in db_config.json")
-
-    cfg = full_config["mysql"]
-
-    user = cfg["user"]
-    pwd = cfg["password"]
-    host = cfg["host"]
-    port = cfg.get("port", 3306)
+def get_engine(layer: str = "bronze") -> Engine:
+    """Create a missing layer database and return its SQLAlchemy engine."""
+    cfg = load_config()["mysql"]
 
     db_map = {
         "bronze": cfg["bronze_db"],
@@ -76,49 +49,86 @@ def get_engine(layer="bronze"):
         raise ValueError(f"Unknown layer: {layer}")
 
     dbname = db_map[layer]
-    pwd_quoted = quote_plus(pwd)
 
-    url = f"mysql+pymysql://{user}:{pwd_quoted}@{host}:{port}/{dbname}"
+    # Database names are SQL identifiers, not query parameters.
+    # Restrict their format before using them in CREATE DATABASE.
+    if not re.fullmatch(r"[A-Za-z0-9_]+", dbname):
+        raise ValueError(f"Invalid database name: {dbname!r}")
+
+    connect_args = {
+        "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "10")),
+    }
+
+    # Connect to the MySQL server without selecting a database.
+    server_url = URL.create(
+        drivername="mysql+pymysql",
+        username=cfg["user"],
+        password=cfg["password"],
+        host=cfg["host"],
+        port=cfg["port"],
+    )
+
+    server_engine = create_engine(
+        server_url,
+        pool_pre_ping=True,
+        connect_args=connect_args,
+    )
 
     try:
-        # Try to create engine and test connection
-        engine = create_engine(url, pool_pre_ping=True)
-        # Test the connection
+        with server_engine.begin() as conn:
+            result = conn.execute(
+                text(
+                    """
+                    SELECT SCHEMA_NAME
+                    FROM INFORMATION_SCHEMA.SCHEMATA
+                    WHERE SCHEMA_NAME = :dbname
+                    """
+                ),
+                {"dbname": dbname},
+            )
+
+            database_exists = result.scalar_one_or_none() is not None
+
+            if not database_exists:
+                conn.execute(text(f"CREATE DATABASE `{dbname}`"))
+                logger.info("Created missing database: %s", dbname)
+            else:
+                logger.info("Database already exists: %s", dbname)
+    finally:
+        server_engine.dispose()
+
+    # Connect to the requested layer database.
+    database_url = URL.create(
+        drivername="mysql+pymysql",
+        username=cfg["user"],
+        password=cfg["password"],
+        host=cfg["host"],
+        port=cfg["port"],
+        database=dbname,
+    )
+
+    engine = create_engine(
+        database_url,
+        pool_pre_ping=True,
+        pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+        pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "3600")),
+        connect_args=connect_args,
+    )
+
+    try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
 
-        logger.info(f"Connected to {layer} database: {dbname}")
+        logger.info("Connected to %s database: %s", layer, dbname)
         return engine
-
-    except OperationalError:
-        # Database likely doesn't exist
-        logger.warning(
-            f"Database '{dbname}' not found or connection failed. Attempting to create..."
+    except Exception:
+        engine.dispose()
+        logger.exception(
+            "Failed to connect to %s database %s",
+            layer,
+            dbname,
         )
-
-        try:
-            # Create the database
-            _create_database(cfg, dbname)
-
-            # Create a new engine and test connection
-            engine = create_engine(url, pool_pre_ping=True)
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-
-            logger.info(
-                f"Successfully connected to newly created {layer} database: {dbname}"
-            )
-            return engine
-
-        except Exception as create_error:
-            logger.error(
-                f"Failed to create and connect to database '{dbname}': {create_error}"
-            )
-            raise
-
-
-from sqlalchemy.exc import IntegrityError
-
+        raise
 
 def load_to_silver(
     df: pd.DataFrame,

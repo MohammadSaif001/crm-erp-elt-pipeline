@@ -34,5 +34,5 @@ def get_logs_path(filename: str) -> Path:
 
 
 def get_config_path() -> Path:
-    """Returns absolute path to configs/db_config.json"""
-    return get_project_root() / "configs" / "db_config.json"
+    """Returns absolute path to .env file."""
+    return get_project_root() / ".env"
