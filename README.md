@@ -41,7 +41,6 @@ FastAPI dashboard and data-quality reports
 
 ```text
 configs/
-├── db_config.json              # Local MySQL credentials; create locally
 └── pipeline_config.yaml        # Bronze source-to-table mappings
 data/
 ├── raw/source_crm/             # CRM input CSV files
@@ -77,7 +76,9 @@ tests/                          # Unit, dashboard, and integration tests
 
 The project uses [`uv`](https://docs.astral.sh/uv/) as its package manager.
 Dependencies are declared in [`pyproject.toml`](pyproject.toml) and pinned in
-[`uv.lock`](uv.lock).
+[`uv.lock`](uv.lock). The repository also includes
+[`requirements.txt`](requirements.txt) for installing the pipeline's core
+dependencies with pip.
 
 ## Installation
 
@@ -98,21 +99,19 @@ uv run python --version
 
 ## Configure MySQL
 
-Create `configs/db_config.json` locally. Do not commit real credentials:
+Create a root-level `.env` file for the pipeline and dashboard database
+settings. The dashboard's example file includes the required variable names:
 
-```json
-{
-  "mysql": {
-    "host": "localhost",
-    "port": 3306,
-    "user": "your_user",
-    "password": "your_password",
-    "bronze_db": "bronze_db",
-    "silver_db": "silver_db",
-    "gold_db": "gold_db"
-  }
-}
+```bash
+cp dashboard/.env.example .env
 ```
+
+Set `DB_HOST`, `DB_PORT`, `DB_USER`, and `DB_PASSWORD`. The database names
+`BRONZE_DB`, `SILVER_DB`, and `GOLD_DB` default to `bronze_db`, `silver_db`,
+and `gold_db`. Optional connection pool and timeout settings are
+`DB_CONNECT_TIMEOUT`, `DB_POOL_SIZE`, and `DB_POOL_RECYCLE`. The MySQL user
+needs permission to create databases and tables as well as read and write
+their data; the pipeline creates a layer database if it does not exist.
 
 The source files and their Bronze targets are defined in
 [`configs/pipeline_config.yaml`](configs/pipeline_config.yaml). The expected
@@ -123,12 +122,14 @@ Gold-layer schema is documented in [`docs/data_catalog.md`](docs/data_catalog.md
 Run the full ELT process from the repository root:
 
 ```bash
-uv run python -m src.pipeline
+uv run python -m src.pipeline --run-pipeline
 ```
 
-The pipeline reads from `data/raw/`, creates or updates the configured
-Medallion layers, runs the configured transformations, and writes execution
-details to the pipeline log.
+The pipeline reads the six CSV files under `data/raw/`, creates the configured
+Bronze, Silver, and Gold databases and tables, and writes execution details to
+`data/logs/pipeline.log`. You can run an individual layer with
+`--run-bronze`, `--run-silver`, or `--run-gold` instead of `--run-pipeline`.
+Each invocation requires exactly one of these flags.
 
 ## Run the dashboard
 
@@ -139,13 +140,8 @@ from the repository root:
 uv run uvicorn dashboard.app:app --reload --port 8000
 ```
 
-Open <http://127.0.0.1:8000/>. Available pages:
-
-The dashboard can also be launched through the pipeline CLI:
-
-```bash
-uv run python -m src.pipeline --run-dashboard
-```
+The dashboard can also be launched through the pipeline CLI with
+`uv run python -m src.pipeline --run-dashboard`.
 
 | Page | URL | Purpose |
 | --- | --- | --- |
@@ -155,16 +151,10 @@ uv run python -m src.pipeline --run-dashboard
 | Database Health | `/database-health` | MySQL status and Medallion table inventory |
 | Technical Details | `/technical-details` | Runtime configuration, logs, and Gold schema |
 
-For dashboard-only environment variables, copy
-[`dashboard/.env.example`](dashboard/.env.example) to `dashboard/.env`:
-
-```bash
-cp dashboard/.env.example dashboard/.env
-```
-
-Set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `BRONZE_DB`, `SILVER_DB`,
-and `GOLD_DB` as needed. `PIPELINE_LOG_PATH` is optional; when it is unset or
-the log does not exist, the dashboard displays an empty log state.
+The dashboard uses the same root `.env` file as the pipeline. Set
+`PIPELINE_LOG_PATH` there only if you want to override the default log path.
+If the log file is absent, the dashboard shows an empty log state. The root URL
+redirects to `/home`.
 
 ## Run tests
 
@@ -205,8 +195,8 @@ database requirements.
 
 - **Cannot connect to MySQL:** verify that MySQL is running, the configured
   port is reachable, and the user has permissions for all three databases.
-- **Missing configuration:** confirm that `configs/db_config.json` exists and
-  contains valid JSON. For the dashboard, also check `dashboard/.env`.
+- **Missing configuration:** confirm that the root `.env` file exists and
+  contains `DB_USER` and `DB_PASSWORD` along with the appropriate host and port.
 - **Empty pipeline log:** set `PIPELINE_LOG_PATH` to the generated
   `data/logs/pipeline.log` path.
 - **Integration tests fail locally:** run the unit tests first, then run the
@@ -214,11 +204,11 @@ database requirements.
 
 ## Security and Git hygiene
 
-- Never commit `configs/db_config.json`, `.env`, passwords, or API keys.
+- Never commit `.env`, passwords, or API keys.
 - Keep raw and generated data separate from source code.
 - Review changes to SQL and pipeline configuration before running them against
   shared databases.
 
 ## License
 
-No license has been specified for this project yet.
+This project is licensed under the [MIT License](LICENSE).
