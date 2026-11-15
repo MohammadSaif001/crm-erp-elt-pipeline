@@ -154,8 +154,8 @@ def run_customer_pipeline() -> None:
             chunksize=1000,
         )
         logger.info("ERP Customers Silver Pipeline completed successfully.")
-    except Exception:
-        logger.exception("Pipeline failed")
+    except Exception as e:
+        logger.error(f"Pipeline failed: {e}", exc_info=True)
 
 
 def run_location_pipeline() -> None:
@@ -194,8 +194,8 @@ def run_location_pipeline() -> None:
             chunksize=1000,
         )
         logger.info("ERP Customer Locations Silver Pipeline completed successfully.")
-    except Exception:
-        logger.exception("Location pipeline failed")
+    except Exception as e:
+        logger.error(f"Location pipeline failed: {e}", exc_info=True)
 
 
 def run_category_pipeline() -> None:
@@ -224,8 +224,8 @@ def run_category_pipeline() -> None:
             chunksize=1000,
         )
         logger.info("ERP Product Categories Silver Pipeline completed successfully.")
-    except Exception:
-        logger.exception("Category pipeline failed")
+    except Exception as e:
+        logger.error(f"Category pipeline failed: {e}", exc_info=True)
 
 
 if __name__ == "__main__":

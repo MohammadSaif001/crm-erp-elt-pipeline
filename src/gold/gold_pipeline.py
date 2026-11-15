@@ -46,9 +46,9 @@ def run_gold_pipeline() -> None:
                 conn.commit()
                 succeeded += 1
                 logger.info("  -> OK")
-            except Exception as e:  # noqa: BLE001 - continue remaining SQL statements
+            except Exception as e:
                 failed += 1
-                logger.error("  -> FAILED: %s", e)
+                logger.error(f"  -> FAILED: {e}")
 
     logger.info(
         f"Gold Layer Pipeline finished: "

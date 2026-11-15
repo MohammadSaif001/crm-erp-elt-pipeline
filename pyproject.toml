@@ -1,37 +1,74 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "data-engineering-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "CRM and ERP ELT pipeline with a FastAPI operations dashboard"
 readme = "README.md"
-authors = [
-    { name = "Mohammad Saif", email = "mohammadsaif001@users.noreply.github.com" }
-]
-requires-python = ">=3.14"
+requires-python = ">=3.11"
+
 dependencies = [
     "cryptography>=50.0.1",
-    "fastapi>=0.110",
+    "fastapi[standard]>=0.110",
     "jinja2>=3.1",
     "numpy>=1.23.0",
     "pandas>=1.5.0",
     "plotly>=7.1.0",
     "pymysql>=1.0.0",
-    "pytest>=7.0.0",
     "python-dotenv>=1.2.3",
     "pyyaml>=6.0",
     "sqlalchemy>=1.4.0,<3.0.0",
-    "starlette",
-    "uvicorn[standard]>=0.27",
+    "starlette>=0.36.3",
 ]
 
 [project.scripts]
-data-engineering-project = "data_engineering_project:main"
+elt = "src.pipeline:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src", "src" = "src" }
+packages = [
+    "src",
+    "src.bronze",
+    "src.core",
+    "src.dashboard",
+    "src.dashboard.database",
+    "src.dashboard.utils",
+    "src.data_engineering_project",
+    "src.database_checks",
+    "src.extract",
+    "src.gold",
+    "src.silver",
+    "src.silver.crm",
+    "src.silver.erp",
+    "bronze",
+    "core",
+    "dashboard",
+    "dashboard.database",
+    "dashboard.utils",
+    "data_engineering_project",
+    "database_checks",
+    "extract",
+    "gold",
+    "silver",
+    "silver.crm",
+    "silver.erp",
+]
+
+[tool.setuptools.package-data]
+dashboard = [
+    "assets/**/*",
+    "templates/**/*.html",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "integration: requires the configured Bronze, Silver, and Gold databases",
 ]
-
-[build-system]
-requires = ["uv_build>=0.12.9,<0.13.0"]
-build-backend = "uv_build"

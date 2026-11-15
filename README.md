@@ -46,12 +46,6 @@ data/
 ├── raw/source_crm/             # CRM input CSV files
 ├── raw/source_erp/             # ERP input CSV files
 └── logs/pipeline.log           # Generated pipeline log
-dashboard/
-├── app.py                      # FastAPI application import target
-├── main.py                     # Dashboard routes and request context
-├── templates/                  # Jinja HTML templates
-├── database/                   # Dashboard database queries
-└── utils/                      # Health, caching, formatting, and log helpers
 docs/data_catalog.md            # Gold-layer table and column reference
 sql/
 ├── bootstrap/                  # Pipeline metadata tables
@@ -63,22 +57,23 @@ src/
 ├── silver/                     # CRM and ERP transformations
 ├── gold/                       # Analytics-layer preparation
 ├── database_checks/            # Data-quality checks
-└── core/                       # Configuration, paths, logging, and database helpers
+├── core/                       # Configuration, paths, logging, and database helpers
+└── dashboard/                  # FastAPI app, templates, assets, and dashboard helpers
 tests/                          # Unit, dashboard, and integration tests
 ```
 
 ## Requirements
 
-- Python 3.14 or newer
+- Python 3.11 or newer
 - MySQL 8.0 or newer
 - A MySQL user with permission to create and write the Bronze, Silver, and
   Gold databases
 
-The project uses [`uv`](https://docs.astral.sh/uv/) as its package manager.
-Dependencies are declared in [`pyproject.toml`](pyproject.toml) and pinned in
-[`uv.lock`](uv.lock). The repository also includes
-[`requirements.txt`](requirements.txt) for installing the pipeline's core
-dependencies with pip.
+The project uses [`uv`](https://docs.astral.sh/uv/) as its package manager and
+Setuptools as its build backend. Dependencies are declared in
+[`pyproject.toml`](pyproject.toml) and pinned in [`uv.lock`](uv.lock). The
+repository also includes [`requirements.txt`](requirements.txt) for installing
+the pipeline's core dependencies with pip.
 
 ## Installation
 
@@ -102,8 +97,10 @@ uv run python --version
 Create a root-level `.env` file for the pipeline and dashboard database
 settings. The dashboard's example file includes the required variable names:
 
+The example file is located at `src/dashboard/.env.example`:
+
 ```bash
-cp dashboard/.env.example .env
+cp src/dashboard/.env.example .env
 ```
 
 Set `DB_HOST`, `DB_PORT`, `DB_USER`, and `DB_PASSWORD`. The database names
@@ -122,14 +119,14 @@ Gold-layer schema is documented in [`docs/data_catalog.md`](docs/data_catalog.md
 Run the full ELT process from the repository root:
 
 ```bash
-uv run python -m src.pipeline --run-pipeline
+uv run elt --run-pipeline
 ```
 
 The pipeline reads the six CSV files under `data/raw/`, creates the configured
 Bronze, Silver, and Gold databases and tables, and writes execution details to
-`data/logs/pipeline.log`. You can run an individual layer with
-`--run-bronze`, `--run-silver`, or `--run-gold` instead of `--run-pipeline`.
-Each invocation requires exactly one of these flags.
+`data/logs/pipeline.log`. You can run an individual layer with `uv run elt
+--run-bronze`, `uv run elt --run-silver`, or `uv run elt --run-gold` instead.
+Each invocation requires exactly one run flag.
 
 ## Run the dashboard
 
@@ -141,7 +138,7 @@ uv run uvicorn dashboard.app:app --reload --port 8000
 ```
 
 The dashboard can also be launched through the pipeline CLI with
-`uv run python -m src.pipeline --run-dashboard`.
+`uv run elt --run-dashboard`.
 
 | Page | URL | Purpose |
 | --- | --- | --- |

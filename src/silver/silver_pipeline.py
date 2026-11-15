@@ -30,9 +30,9 @@ def run_silver_pipeline() -> None:
         try:
             pipeline_fn()
             succeeded += 1
-        except Exception as e:  # noqa: BLE001 - isolate failures between pipelines
+        except Exception as e:
             failed += 1
-            logger.error("[ORCHESTRATOR] %s pipeline failed: %s", name, e)
+            logger.error(f"[ORCHESTRATOR] {name} pipeline failed: {e}")
 
     logger.info(
         f"Silver Layer Pipeline finished: "

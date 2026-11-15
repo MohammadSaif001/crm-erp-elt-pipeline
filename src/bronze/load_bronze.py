@@ -49,8 +49,8 @@ def data_base_connection() -> None | Any:
         engine = get_engine("bronze")
         logger.info("Database connected successfully for bronze layer.")
         return engine  # Return it!
-    except Exception:
-        logger.exception("Connection error while creating bronze DB engine")
+    except Exception as e:
+        logger.exception("Connection error while creating bronze DB engine: %s", e)
         return None
 
 
@@ -138,8 +138,8 @@ def load_cust_info() -> bool:
 
         return True
 
-    except Exception:
-        logger.exception("[ERROR] Loading table: %s", table_name)
+    except Exception as e:
+        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
         return False
 
 
@@ -235,8 +235,8 @@ def load_sales_details_info() -> bool:
 
         return True
 
-    except Exception:
-        logger.exception("[ERROR] Loading table: %s", table_name)
+    except Exception as e:
+        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
         return False
 
 
@@ -323,8 +323,8 @@ def load_prd_info() -> bool:
 
         return True
 
-    except Exception:
-        logger.exception("[ERROR] Loading table: %s", table_name)
+    except Exception as e:
+        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
         return False
 
 
@@ -407,8 +407,8 @@ def load_erp_cust_az12() -> bool:
         logger.info(f"Success: Data loaded into bronze_db.{table_name}")
 
         return True
-    except Exception:
-        logger.exception("[ERROR] Loading table: %s", table_name)
+    except Exception as e:
+        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
         return False
 
 
@@ -480,8 +480,8 @@ def load_erp_location_a101() -> bool:
         logger.info(f"Success: Data loaded into bronze_db.{table_name}")
 
         return True
-    except Exception:
-        logger.exception("[ERROR] Loading table: %s", table_name)
+    except Exception as e:
+        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
         return False
 
 
@@ -563,8 +563,8 @@ def load_erp_px_cat_g1v2() -> bool:
         logger.info(f"Success: Data loaded into bronze_db.{table_name}")
 
         return True
-    except Exception:
-        logger.exception("[ERROR] Loading table: %s", table_name)
+    except Exception as e:
+        logger.exception(f"[ERROR] Loading table: {table_name} | Error: {e}")
         return False
 
 
