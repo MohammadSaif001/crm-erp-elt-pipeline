@@ -66,6 +66,7 @@ tests/                          # Unit, dashboard, and integration tests
 
 - Python 3.11 or newer
 - MySQL 8.0 or newer
+- Docker Engine and Docker Compose v2 (for containerized runs)
 - A MySQL user with permission to create and write the Bronze, Silver, and
   Gold databases
 
@@ -113,6 +114,44 @@ their data; the pipeline creates a layer database if it does not exist.
 The source files and their Bronze targets are defined in
 [`configs/pipeline_config.yaml`](configs/pipeline_config.yaml). The expected
 Gold-layer schema is documented in [`docs/data_catalog.md`](docs/data_catalog.md).
+
+## Run with Docker
+
+Copy the Docker environment template to `.env`. The pipeline must use
+`DB_HOST=mysql` because `mysql` is the Compose service name:
+
+```bash
+cp .env.example .env
+docker compose build
+docker compose up -d mysql
+docker compose ps
+```
+
+Run the complete ELT pipeline inside Docker:
+
+```bash
+docker compose run --rm pipeline
+```
+
+Start the dashboard, if needed:
+
+```bash
+docker compose up -d dashboard
+```
+
+The dashboard is available at <http://localhost:8000>. Stop the containers with:
+
+```bash
+docker compose down
+```
+
+To remove the persisted MySQL data and initialize it again:
+
+```bash
+docker compose down -v
+docker compose up -d mysql
+docker compose run --rm pipeline
+```
 
 ## Run the pipeline
 
@@ -192,6 +231,11 @@ database requirements.
 
 - **Cannot connect to MySQL:** verify that MySQL is running, the configured
   port is reachable, and the user has permissions for all three databases.
+- **Docker connects to `localhost`:** set `DB_HOST=mysql` in the root `.env`;
+  `localhost` inside the pipeline container refers to that container itself.
+- **Compose reports unset `MYSQL_*` variables:** define `MYSQL_DATABASE`,
+  `MYSQL_USER`, and `MYSQL_PASSWORD` in the root `.env`, as shown in the
+  Docker configuration above.
 - **Missing configuration:** confirm that the root `.env` file exists and
   contains `DB_USER` and `DB_PASSWORD` along with the appropriate host and port.
 - **Empty pipeline log:** set `PIPELINE_LOG_PATH` to the generated

@@ -1,0 +1,266 @@
+<svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+
+  <style>
+    :root {
+      --lumi-sans: 'Comic Mono', var(--font-family, 'Comic Mono', sans-serif);
+      --lumi-mono: 'Comic Mono', ui-monospace, monospace;
+    }
+
+    /* LIGHT MODE */
+    :root {
+      --lumi-bg: #ffffff;
+      --lumi-ink: #1f2937;
+      --lumi-muted: #4b5563;
+
+      --lumi-dim: #eef2f7;
+      --lumi-container: #f3f4f6;
+      --lumi-outline: #9ca3af;
+
+      --lumi-accent-bg: #e0f2fe;
+      --lumi-primary: #0284c7;
+    }
+
+    /* DARK MODE */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --lumi-bg: #111827;
+        --lumi-ink: #f3f4f6;
+        --lumi-muted: #b8c3d1;
+
+        --lumi-dim: #252f3d;
+        --lumi-container: #303b4b;
+        --lumi-outline: #64748b;
+
+        --lumi-accent-bg: #173b63;
+        --lumi-primary: #63b3ff;
+      }
+    }
+
+    text {
+      font-weight: 400;
+      stroke: none;
+    }
+
+    .t-l1 {
+      font-family: var(--lumi-sans);
+      font-size: 15px;
+      fill: var(--lumi-ink);
+    }
+
+    .t-l2 {
+      font-family: var(--lumi-mono);
+      font-size: 13px;
+      font-style: italic;
+      fill: var(--lumi-muted);
+    }
+
+    .t-l4 {
+      font-family: var(--lumi-sans);
+      font-size: 13px;
+      fill: var(--lumi-muted);
+    }
+
+    .node-step {
+      fill: var(--lumi-dim);
+      stroke: none;
+    }
+
+    .node-focal {
+      fill: var(--lumi-accent-bg);
+      stroke: var(--lumi-primary);
+      stroke-width: 1.25;
+    }
+
+    .node-store {
+      fill: var(--lumi-container);
+      stroke: var(--lumi-outline);
+      stroke-width: 1;
+    }
+
+    .edge-arrow {
+      fill: none;
+      stroke: var(--lumi-ink);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-dasharray: 0 4;
+      marker-end: url(#lumi-caret);
+    }
+  </style>
+
+  <defs>
+    <marker
+      id="lumi-caret"
+      viewBox="0 0 10 10"
+      refX="7.5"
+      refY="5"
+      markerUnits="userSpaceOnUse"
+      markerWidth="10"
+      markerHeight="10"
+      orient="auto"
+    >
+      <path
+        d="M 3 1.2 L 7.5 5 L 3 8.8"
+        fill="none"
+        stroke="var(--lumi-ink)"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect
+    width="680"
+    height="300"
+    fill="var(--lumi-bg)"
+  />
+
+  <!-- ELT Pipeline -->
+  <rect
+    class="node-step"
+    x="20" y="32"
+    width="176" height="80"
+    rx="40"
+  />
+
+  <text class="t-l1"
+    x="108" y="63"
+    text-anchor="middle"
+    dominant-baseline="central">
+    ELT Pipeline
+  </text>
+
+  <text class="t-l2"
+    x="108" y="85"
+    text-anchor="middle"
+    dominant-baseline="central">
+    elt --run-pipeline
+  </text>
+
+  <!-- Arrow -->
+  <line class="edge-arrow"
+    x1="204" y1="72"
+    x2="244" y2="72"
+  />
+
+  <!-- MySQL -->
+  <rect
+    class="node-focal"
+    x="252" y="32"
+    width="176" height="80"
+    rx="40"
+  />
+
+  <text class="t-l1"
+    x="340" y="63"
+    text-anchor="middle"
+    dominant-baseline="central">
+    MySQL 8.0
+  </text>
+
+  <text class="t-l4"
+    x="340" y="85"
+    text-anchor="middle"
+    dominant-baseline="central">
+    bronze, silver, gold
+  </text>
+
+  <!-- Arrow -->
+  <line class="edge-arrow"
+    x1="436" y1="72"
+    x2="476" y2="72"
+  />
+
+  <!-- FastAPI -->
+  <rect
+    class="node-step"
+    x="484" y="32"
+    width="176" height="80"
+    rx="40"
+  />
+
+  <text class="t-l1"
+    x="572" y="63"
+    text-anchor="middle"
+    dominant-baseline="central">
+    FastAPI UI
+  </text>
+
+  <text class="t-l2"
+    x="572" y="85"
+    text-anchor="middle"
+    dominant-baseline="central">
+    0.0.0.0:8000
+  </text>
+
+  <!-- Host Storage -->
+  <rect
+    class="node-store"
+    x="20" y="180"
+    width="176" height="72"
+    rx="36"
+  />
+
+  <text class="t-l1"
+    x="108" y="207"
+    text-anchor="middle"
+    dominant-baseline="central">
+    Host ./data
+  </text>
+
+  <text class="t-l4"
+    x="108" y="229"
+    text-anchor="middle"
+    dominant-baseline="central">
+    CSVs and logs
+  </text>
+
+  <!-- Host Arrow -->
+  <line class="edge-arrow"
+    x1="108" y1="172"
+    x2="108" y2="120"
+  />
+
+  <!-- MySQL Volume -->
+  <rect
+    class="node-store"
+    x="252" y="180"
+    width="176" height="72"
+    rx="36"
+  />
+
+  <text class="t-l1"
+    x="340" y="207"
+    text-anchor="middle"
+    dominant-baseline="central">
+    mysql_data
+  </text>
+
+  <text class="t-l4"
+    x="340" y="229"
+    text-anchor="middle"
+    dominant-baseline="central">
+    Named volume
+  </text>
+
+  <!-- Volume Arrow -->
+  <line class="edge-arrow"
+    x1="340" y1="172"
+    x2="340" y2="120"
+  />
+
+  <!-- Storage Connection -->
+  <path
+    class="edge-arrow"
+    d="
+      M 108 260
+      L 108 264
+      Q 108 280 124 280
+      L 556 280
+      Q 572 280 572 264
+      L 572 120
+    "
+  />
+
+</svg>

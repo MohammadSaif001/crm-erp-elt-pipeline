@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS bronze_db;
+CREATE DATABASE IF NOT EXISTS silver_db;
+CREATE DATABASE IF NOT EXISTS gold_db;
+
+GRANT ALL PRIVILEGES ON bronze_db.* TO 'elt_user'@'%';
+GRANT ALL PRIVILEGES ON silver_db.* TO 'elt_user'@'%';
+GRANT ALL PRIVILEGES ON gold_db.* TO 'elt_user'@'%';
+
+FLUSH PRIVILEGES;
